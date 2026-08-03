@@ -149,3 +149,10 @@ built-in `node:sqlite`, so there is no native module to compile.
 | `npm run build:data` | Download sources and build the corpus |
 | `npm run build` | Production build |
 | `npm run lint` | ESLint |
+
+## Docs
+
+- [`docs/HANDOFF.md`](docs/HANDOFF.md) — how it is built, the decisions behind it,
+  and the data quirks that will bite you
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — future feature ideas, with the data
+  availability for each already worked out
