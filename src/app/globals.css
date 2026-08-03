@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+/*
+ * BibleRoot's palette leans on warm paper tones in light mode and deep ink in
+ * dark mode. Hebrew and Greek each get their own accent so the language of a
+ * term is legible at a glance, in both themes.
+ */
+:root {
+  --paper: #faf7f2;
+  --paper-raised: #ffffff;
+  --paper-sunken: #f2ede4;
+  --ink: #1c1917;
+  --ink-soft: #57534e;
+  --ink-faint: #8b8378;
+  --rule: #e4ddd1;
+  --rule-strong: #d3c9b8;
+
+  --hebrew: #a3541f;
+  --hebrew-soft: #f5e7d8;
+  --greek: #3c5a8a;
+  --greek-soft: #e2e8f3;
+
+  --accent: #8a5a2b;
+  --highlight: #fdf0d5;
+  --danger: #a33a2b;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #14120f;
+    --paper-raised: #1d1a16;
+    --paper-sunken: #100e0c;
+    --ink: #ece5da;
+    --ink-soft: #b0a696;
+    --ink-faint: #837a6d;
+    --rule: #2e2922;
+    --rule-strong: #423b31;
+
+    --hebrew: #e0a066;
+    --hebrew-soft: #34261a;
+    --greek: #93b4e0;
+    --greek-soft: #1b2432;
+
+    --accent: #d9a066;
+    --highlight: #3a2e18;
+    --danger: #e08573;
+  }
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-paper-sunken: var(--paper-sunken);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-ink-faint: var(--ink-faint);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-hebrew: var(--hebrew);
+  --color-hebrew-soft: var(--hebrew-soft);
+  --color-greek: var(--greek);
+  --color-greek-soft: var(--greek-soft);
+  --color-accent: var(--accent);
+  --color-highlight: var(--highlight);
+  --color-danger: var(--danger);
+
+  --font-sans: var(--font-sans-ui), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-serif-text), ui-serif, Georgia, serif;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+}
+
+/* Biblical-language type. The Hebrew stack prioritises fonts that place vowel
+   points and cantillation marks correctly. */
+.font-hebrew {
+  font-family: var(--font-hebrew-text), "SBL Hebrew", "Taamey Frank CLM", "Ezra SIL",
+    "Noto Serif Hebrew", "Times New Roman", serif;
+  direction: rtl;
+  unicode-bidi: isolate;
+  line-height: 1.9;
+}
+
+.font-greek {
+  font-family: var(--font-greek-text), "SBL Greek", "Gentium Plus", "Noto Serif", serif;
+  line-height: 1.7;
+}
+
+/* Search result highlighting from FTS5 snippet(). */
+mark {
+  background: var(--highlight);
+  color: inherit;
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+::selection {
+  background: var(--highlight);
+  color: var(--ink);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
