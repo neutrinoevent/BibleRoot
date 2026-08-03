@@ -21,6 +21,7 @@ import { fileURLToPath } from "node:url";
 import ExcelJS from "exceljs";
 
 import { BOOKS, BOOKS_BY_NAME } from "../src/lib/books.ts";
+import { buildDeepLexicons, type DeepEntry } from "./deep-lexicons.ts";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE_DIR = path.join(ROOT, "data", "sources");
@@ -51,6 +52,21 @@ const SOURCES = [
     file: "tbesg.txt",
     url: "https://raw.githubusercontent.com/STEPBible/STEPBible-Data/master/Lexicons/TBESG%20-%20Translators%20Brief%20lexicon%20of%20Extended%20Strongs%20for%20Greek%20-%20STEPBible.org%20CC%20BY.txt",
     label: "Tyndale brief Greek lexicon",
+  },
+  {
+    file: "BrownDriverBriggs.xml",
+    url: "https://raw.githubusercontent.com/openscriptures/HebrewLexicon/master/BrownDriverBriggs.xml",
+    label: "Brown-Driver-Briggs Hebrew lexicon",
+  },
+  {
+    file: "LexicalIndex.xml",
+    url: "https://raw.githubusercontent.com/openscriptures/HebrewLexicon/master/LexicalIndex.xml",
+    label: "Hebrew lexical index (Strong's ↔ BDB ↔ TWOT)",
+  },
+  {
+    file: "abbott-smith.tei.xml",
+    url: "https://raw.githubusercontent.com/translatable-exegetical-tools/Abbott-Smith/master/abbott-smith.tei.xml",
+    label: "Abbott-Smith Manual Greek Lexicon",
   },
 ];
 
@@ -127,6 +143,7 @@ function createSchema(db: DatabaseSync) {
     DROP TABLE IF EXISTS verses;
     DROP TABLE IF EXISTS words;
     DROP TABLE IF EXISTS strongs;
+    DROP TABLE IF EXISTS lexicon_entries;
     DROP TABLE IF EXISTS meta;
     DROP TABLE IF EXISTS verses_fts;
 
@@ -183,8 +200,20 @@ function createSchema(db: DatabaseSync) {
       derivation    TEXT,
       definition    TEXT,
       kjv_usage     TEXT,
+      twot          TEXT,
       occurrences   INTEGER NOT NULL DEFAULT 0
     );
+
+    -- Full entries from the scholarly lexicons, pre-rendered to safe HTML.
+    CREATE TABLE lexicon_entries (
+      strongs   TEXT NOT NULL,
+      source    TEXT NOT NULL,
+      headword  TEXT,
+      citation  TEXT,
+      html      TEXT NOT NULL,
+      PRIMARY KEY (strongs, source)
+    );
+    CREATE INDEX lexicon_entries_strongs_idx ON lexicon_entries(strongs);
 
     CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 
@@ -367,6 +396,60 @@ async function importLexicons(db: DatabaseSync) {
   }
   db.exec("COMMIT");
   log(`imported ${entries.size.toLocaleString()} lexicon entries`);
+}
+
+/**
+ * Brown-Driver-Briggs and Abbott-Smith: the entries a reader turns to when the
+ * concise gloss is not enough.
+ */
+/**
+ * The generated markup is rendered without a runtime sanitiser, so refuse to
+ * ship anything that is not a balanced tree of the tags we emit ourselves.
+ */
+function assertWellFormed(entries: DeepEntry[]) {
+  const malformed: string[] = [];
+  for (const entry of entries) {
+    const stack: string[] = [];
+    for (const match of entry.html.matchAll(/<(\/?)([a-z]+)[^>]*>/g)) {
+      if (match[1]) {
+        if (stack.pop() !== match[2]) {
+          malformed.push(`${entry.strongs}/${entry.source}`);
+          break;
+        }
+      } else {
+        stack.push(match[2]);
+      }
+    }
+    if (stack.length > 0) malformed.push(`${entry.strongs}/${entry.source}`);
+  }
+  if (malformed.length > 0) {
+    throw new Error(
+      `${malformed.length} lexicon entries produced unbalanced markup (e.g. ${malformed
+        .slice(0, 5)
+        .join(", ")})`,
+    );
+  }
+}
+
+async function importDeepLexicons(db: DatabaseSync) {
+  const { entries, twot } = await buildDeepLexicons(SOURCE_DIR);
+  assertWellFormed(entries);
+
+  const insert = db.prepare(
+    "INSERT OR REPLACE INTO lexicon_entries (strongs, source, headword, citation, html) VALUES (?, ?, ?, ?, ?)",
+  );
+  const setTwot = db.prepare("UPDATE strongs SET twot = ? WHERE id = ?");
+
+  db.exec("BEGIN");
+  for (const entry of entries) {
+    insert.run(entry.strongs, entry.source, entry.headword, entry.citation, entry.html);
+  }
+  for (const [strongs, number] of twot) setTwot.run(number, strongs);
+  db.exec("COMMIT");
+
+  const bdb = entries.filter((entry) => entry.source === "bdb").length;
+  const greek = entries.length - bdb;
+  log(`imported ${bdb.toLocaleString()} BDB and ${greek.toLocaleString()} Abbott-Smith entries`);
 }
 
 function importBooks(db: DatabaseSync) {
@@ -649,6 +732,7 @@ async function main() {
   createSchema(db);
   importBooks(db);
   await importLexicons(db);
+  await importDeepLexicons(db);
   await importCorpus(db);
   finalize(db);
   db.close();

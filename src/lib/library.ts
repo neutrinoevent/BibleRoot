@@ -5,6 +5,8 @@ import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
 
+import type { CustomResource, CustomResourceFile } from "./resources";
+
 /**
  * Everything the user creates lives in plain markdown files with a small
  * frontmatter header, so the library stays readable, greppable and
@@ -312,6 +314,34 @@ export async function saveNote(input: SaveNoteInput): Promise<Note> {
 
 export async function deleteNote(id: string): Promise<void> {
   await fsp.rm(noteFile(id), { force: true });
+}
+
+/* ------------------------------------------------------ custom resources */
+
+/**
+ * Optional `data/resources.json` lets the reader add their own scholarly
+ * destinations alongside the built-in ones. A malformed file is ignored rather
+ * than breaking the page — it is hand-edited, so mistakes are expected.
+ */
+export async function readCustomResources(): Promise<CustomResourceFile> {
+  try {
+    const raw = await fsp.readFile(path.join(process.cwd(), "data", "resources.json"), "utf8");
+    const parsed = JSON.parse(raw) as CustomResourceFile;
+    const valid = (list: unknown): CustomResource[] =>
+      Array.isArray(list)
+        ? (list.filter(
+            (item) =>
+              item &&
+              typeof item === "object" &&
+              typeof (item as CustomResource).label === "string" &&
+              typeof (item as CustomResource).url === "string" &&
+              /^https?:\/\//i.test((item as CustomResource).url),
+          ) as CustomResource[])
+        : [];
+    return { term: valid(parsed.term), verse: valid(parsed.verse) };
+  } catch {
+    return {};
+  }
 }
 
 export async function libraryCounts(): Promise<{ terms: number; notes: number }> {

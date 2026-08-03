@@ -5,14 +5,16 @@ import type { Metadata } from "next";
 import { InterlinearGrid } from "@/components/InterlinearGrid";
 import { NotesPanel } from "@/components/NotesPanel";
 import { ReadingLine } from "@/components/ReadingLine";
+import { ResourceLinks } from "@/components/ResourceLinks";
 import {
   getAnnotatedWords,
   getNeighbours,
   getVerse,
   isOmittedVerse,
 } from "@/lib/corpus";
-import { notesForRef } from "@/lib/library";
+import { notesForRef, readCustomResources } from "@/lib/library";
 import { bookFromSlug, chapterHref, verseHref } from "@/lib/refs";
+import { applyCustomVerseResources, verseResources } from "@/lib/resources";
 
 interface Props {
   params: Promise<{ book: string; chapter: string; verse: string }>;
@@ -71,7 +73,12 @@ export default async function VersePage({ params }: Props) {
 
   const words = getAnnotatedWords(verse.id);
   const { prev, next } = getNeighbours(verse.id);
-  const notes = await notesForRef(verse.ref);
+  const [notes, custom] = await Promise.all([notesForRef(verse.ref), readCustomResources()]);
+  const verseContext = { book, chapter, verse: verseNumber, ref: verse.ref };
+  const links = [
+    ...verseResources(verseContext),
+    ...applyCustomVerseResources(custom.verse, verseContext),
+  ];
   const poetry = words.some((word) => word.para?.startsWith("indent"));
   const language = words.find((word) => word.language)?.language ?? null;
 
@@ -117,6 +124,12 @@ export default async function VersePage({ params }: Props) {
           <p className="mt-1 text-sm text-ink-soft">{verse.crossref}</p>
         </section>
       )}
+
+      <ResourceLinks
+        links={links}
+        heading="Study this verse elsewhere"
+        blurb="Commentaries, translators' notes and parallel versions, opened in a new tab."
+      />
 
       <section className="mt-10">
         <NotesPanel verseRef={verse.ref} notes={notes} />

@@ -46,7 +46,40 @@ export interface StrongsEntry {
   derivation: string | null;
   definition: string | null;
   kjv_usage: string | null;
+  twot: string | null;
   occurrences: number;
+}
+
+export interface DeepLexiconEntry {
+  strongs: string;
+  source: "bdb" | "abbott-smith";
+  headword: string | null;
+  citation: string | null;
+  /** Pre-sanitised at import time; safe to render directly. */
+  html: string;
+}
+
+const LEXICON_TITLES: Record<string, { title: string; attribution: string }> = {
+  bdb: {
+    title: "Brown-Driver-Briggs",
+    attribution: "A Hebrew and English Lexicon of the Old Testament (1906)",
+  },
+  "abbott-smith": {
+    title: "Abbott-Smith",
+    attribution: "A Manual Greek Lexicon of the New Testament (1922)",
+  },
+};
+
+export function lexiconTitle(source: string): { title: string; attribution: string } {
+  return LEXICON_TITLES[source] ?? { title: source, attribution: "" };
+}
+
+/** Full scholarly entries — BDB for Hebrew, Abbott-Smith for Greek. */
+export function getDeepLexiconEntries(strongs: string): DeepLexiconEntry[] {
+  return queryAll<DeepLexiconEntry>(
+    "SELECT strongs, source, headword, citation, html FROM lexicon_entries WHERE strongs = ? ORDER BY source",
+    [strongs],
+  );
 }
 
 export interface Occurrence {

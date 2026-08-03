@@ -47,3 +47,6 @@ next-env.d.ts
 /data/bibleroot.db
 /data/bibleroot.db-shm
 /data/bibleroot.db-wal
+
+# Personal study destinations — copy data/resources.example.json to create it.
+/data/resources.json

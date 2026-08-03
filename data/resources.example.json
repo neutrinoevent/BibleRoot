@@ -1,0 +1,29 @@
+{
+  "_comment": "Copy this file to data/resources.json to add your own study destinations alongside the built-in ones. Placeholders in url are substituted and URL-encoded. Term links may use {strongs} {number} {lemma} {translit} {twot}. Verse links may use {book} {bookSlug} {osis} {chapter} {verse} {ref} {bibleHub} {blb} {sefaria}. Only http(s) URLs are accepted; malformed entries are ignored.",
+
+  "term": [
+    {
+      "label": "Perseus word study",
+      "description": "Morphological analysis and classical attestations",
+      "url": "https://www.perseus.tufts.edu/hopper/morph?l={lemma}&la=greek"
+    },
+    {
+      "label": "Sefaria search",
+      "description": "This word across the Talmud, Midrash and later Jewish literature",
+      "url": "https://www.sefaria.org/search?q={lemma}"
+    }
+  ],
+
+  "verse": [
+    {
+      "label": "Bible Hub parallel",
+      "description": "Every major translation of this verse side by side",
+      "url": "https://biblehub.com/{bibleHub}/{chapter}-{verse}.htm"
+    },
+    {
+      "label": "Search my notes app",
+      "description": "Look this reference up wherever else you keep notes",
+      "url": "https://example.com/search?q={ref}"
+    }
+  ]
+}

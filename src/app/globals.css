@@ -89,6 +89,78 @@ body {
   line-height: 1.7;
 }
 
+/*
+ * Scholarly lexicon entries (Brown-Driver-Briggs, Abbott-Smith). The markup is
+ * generated at import time from a fixed whitelist, so these are the only
+ * classes that can appear inside .lex-entry.
+ */
+.lex-entry {
+  font-size: 0.9375rem;
+  line-height: 1.65;
+  color: var(--ink-soft);
+}
+
+.lex-entry .lex-heb {
+  font-family: var(--font-hebrew-text), "SBL Hebrew", "Noto Serif Hebrew", serif;
+  font-size: 1.15em;
+  color: var(--hebrew);
+}
+
+.lex-entry .lex-grk {
+  font-family: var(--font-greek-text), "SBL Greek", "Noto Serif", serif;
+  color: var(--greek);
+}
+
+.lex-entry .lex-gloss {
+  font-style: normal;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.lex-entry .lex-pos,
+.lex-entry .lex-tag {
+  font-style: italic;
+  color: var(--ink-faint);
+}
+
+/* Senses nest, so each level steps in from its parent. */
+.lex-entry .lex-sense {
+  margin-top: 0.5rem;
+  padding-left: 1rem;
+  border-left: 1px solid var(--rule);
+}
+
+.lex-entry .lex-sense-n {
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.lex-entry .lex-form,
+.lex-entry .lex-block {
+  margin-top: 0.4rem;
+}
+
+.lex-entry .lex-ref {
+  color: var(--accent);
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+}
+
+.lex-entry .lex-ref:hover {
+  text-decoration-style: solid;
+}
+
+.lex-entry .lex-xref {
+  color: var(--accent);
+  font-family: ui-monospace, monospace;
+  font-size: 0.85em;
+}
+
+.lex-entry .lex-cite {
+  color: var(--ink-faint);
+}
+
 /* Search result highlighting from FTS5 snippet(). */
 mark {
   background: var(--highlight);

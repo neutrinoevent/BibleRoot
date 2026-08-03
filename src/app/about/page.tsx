@@ -35,7 +35,36 @@ export default function AboutPage() {
             on hover.
           </dd>
         </div>
+        <div>
+          <dt className="font-medium text-ink">Brown-Driver-Briggs</dt>
+          <dd className="mt-1 leading-relaxed text-ink-soft">
+            <em>A Hebrew and English Lexicon of the Old Testament</em> (1906), digitised by Open
+            Scriptures. Still the standard reference for biblical Hebrew and Aramaic. Its entries
+            appear in full on term pages, along with the TWOT numbers from the same index.
+          </dd>
+        </div>
+        <div>
+          <dt className="font-medium text-ink">Abbott-Smith</dt>
+          <dd className="mt-1 leading-relaxed text-ink-soft">
+            <em>A Manual Greek Lexicon of the New Testament</em> (1922), digitised by Translatable
+            Exegetical Tools. Gives the sense hierarchy of each Greek word along with the
+            distinctions between near synonyms.
+          </dd>
+        </div>
       </dl>
+
+      <h2 className="mt-10 font-serif text-xl">Going deeper</h2>
+      <p className="mt-3 leading-relaxed text-ink-soft">
+        Term and verse pages both link out to the standard scholarly tools — Bible Hub and the
+        Englishman&apos;s Concordance, Blue Letter Bible, STEPBible, Logeion for the classical
+        Greek lexica, the NET Bible translators&apos; notes, and Sefaria for the Jewish commentary
+        tradition on the Hebrew Bible.
+      </p>
+      <p className="mt-3 leading-relaxed text-ink-soft">
+        To add destinations of your own, copy <code>data/resources.example.json</code> to{" "}
+        <code>data/resources.json</code> and list them there. They appear alongside the built-in
+        links, marked <em>yours</em>.
+      </p>
 
       <h2 className="mt-10 font-serif text-xl">A note on the text</h2>
       <p className="mt-3 leading-relaxed text-ink-soft">

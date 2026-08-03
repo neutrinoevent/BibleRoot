@@ -20,9 +20,11 @@
     "@types/node": "^26.1.2",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/sax": "^1.2.7",
     "eslint": "^9",
     "eslint-config-next": "16.2.12",
     "exceljs": "^4.4.0",
+    "sax": "^1.6.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   }

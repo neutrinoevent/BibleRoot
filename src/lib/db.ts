@@ -9,21 +9,40 @@ export const DB_PATH = path.join(process.cwd(), "data", "bibleroot.db");
  * single connection is shared for the life of the process. It is stashed on
  * globalThis because the dev server re-evaluates modules on every edit.
  */
-const globalForDb = globalThis as unknown as { __bibleRootDb?: DatabaseSync };
+const globalForDb = globalThis as unknown as {
+  __bibleRootDb?: DatabaseSync;
+  __bibleRootDbStamp?: string;
+};
 
 export function corpusExists(): boolean {
   return fs.existsSync(DB_PATH);
 }
 
+/** Identifies a particular build of the corpus file. */
+function stamp(): string {
+  const info = fs.statSync(DB_PATH);
+  return `${info.ino}:${info.mtimeMs}:${info.size}`;
+}
+
 export function getDb(): DatabaseSync {
-  if (globalForDb.__bibleRootDb) return globalForDb.__bibleRootDb;
   if (!corpusExists()) {
     throw new Error(
       "Corpus not found. Run `npm run build:data` to download and build data/bibleroot.db.",
     );
   }
+
+  // `npm run build:data` replaces the file wholesale. Without this check a
+  // long-running dev server would keep querying the deleted inode and fail on
+  // any table added by the rebuild.
+  const current = stamp();
+  if (globalForDb.__bibleRootDb && globalForDb.__bibleRootDbStamp === current) {
+    return globalForDb.__bibleRootDb;
+  }
+
+  globalForDb.__bibleRootDb?.close();
   const db = new DatabaseSync(DB_PATH, { readOnly: true });
   globalForDb.__bibleRootDb = db;
+  globalForDb.__bibleRootDbStamp = current;
   return db;
 }
 

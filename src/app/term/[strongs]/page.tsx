@@ -2,13 +2,22 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
+import { DeepLexicon } from "@/components/DeepLexicon";
 import { NotesPanel } from "@/components/NotesPanel";
+import { ResourceLinks } from "@/components/ResourceLinks";
 import { SaveTermButton } from "@/components/SaveTermButton";
 import { BOOKS_BY_ID } from "@/lib/books";
-import { countOccurrences, getOccurrences, getOccurrenceSpread, getStrongs } from "@/lib/corpus";
-import { getTerm, notesForStrongs } from "@/lib/library";
+import {
+  countOccurrences,
+  getDeepLexiconEntries,
+  getOccurrences,
+  getOccurrenceSpread,
+  getStrongs,
+} from "@/lib/corpus";
+import { getTerm, notesForStrongs, readCustomResources } from "@/lib/library";
 import { hrefForBookId } from "@/lib/refs";
 import { describeMorph } from "@/lib/render";
+import { applyCustomTermResources, termResources } from "@/lib/resources";
 
 interface Props {
   params: Promise<{ strongs: string }>;
@@ -40,7 +49,25 @@ export default async function TermPage({ params, searchParams }: Props) {
   const total = countOccurrences(strongs);
   const occurrences = getOccurrences(strongs, limit);
   const spread = getOccurrenceSpread(strongs);
-  const [saved, notes] = await Promise.all([getTerm(strongs), notesForStrongs(strongs)]);
+  const deepEntries = getDeepLexiconEntries(strongs);
+  const [saved, notes, custom] = await Promise.all([
+    getTerm(strongs),
+    notesForStrongs(strongs),
+    readCustomResources(),
+  ]);
+
+  const termContext = {
+    strongs: entry.id,
+    number: entry.number,
+    language: entry.language,
+    lemma: entry.lemma,
+    translit: entry.translit,
+    twot: entry.twot,
+  };
+  const links = [
+    ...termResources(termContext),
+    ...applyCustomTermResources(custom.term, termContext),
+  ];
 
   const isGreek = entry.language === "greek";
   const scriptClass = isGreek ? "font-greek text-greek" : "font-hebrew text-hebrew";
@@ -112,6 +139,14 @@ export default async function TermPage({ params, searchParams }: Props) {
             <dd className="mt-1 text-ink-soft">{describeMorph(entry.morph)}</dd>
           </div>
         )}
+        {entry.twot && (
+          <div>
+            <dt className="text-xs uppercase tracking-wide text-ink-faint">
+              Theological Wordbook of the OT
+            </dt>
+            <dd className="mt-1 text-ink-soft">TWOT {entry.twot}</dd>
+          </div>
+        )}
         {entry.kjv_usage && (
           <div>
             <dt className="text-xs uppercase tracking-wide text-ink-faint">
@@ -121,6 +156,14 @@ export default async function TermPage({ params, searchParams }: Props) {
           </div>
         )}
       </dl>
+
+      <DeepLexicon entries={deepEntries} />
+
+      <ResourceLinks
+        links={links}
+        heading="Take it further"
+        blurb="The standard reference tools for this word, opened in a new tab."
+      />
 
       {topBooks.length > 0 && (
         <section className="mt-10">
