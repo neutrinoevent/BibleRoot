@@ -8,7 +8,7 @@ Current as of `v2`.
 
 ## State
 
-Two tagged releases, both on `main` at `neutrinoevent/BibleRoot` (private):
+Two tagged releases, both on `main` at `neutrinoevent/BibleRoot`:
 
 | Tag | What landed |
 | --- | --- |
