@@ -115,6 +115,10 @@ whatever is on disk.
 The importer deliberately skips the STEPBible "Meaning" column, which carries a
 separate permission requirement from Online Bible.
 
+None of this data is stored in the repository — `npm run build:data` fetches it
+from source. See [`NOTICE.md`](NOTICE.md): the MIT licence covers the
+application code only, and the data keeps its own terms.
+
 Sixteen verse numbers — Matthew 17:21, 18:11, 23:14, Mark 7:16, 9:44, 9:46,
 11:26, 15:28, Luke 17:36, 23:17, John 5:4, Acts 8:37, 15:34, 24:7, 28:29 and
 Romans 16:24 — are absent from the manuscripts behind this text. Opening one
@@ -149,6 +153,14 @@ built-in `node:sqlite`, so there is no native module to compile.
 | `npm run build:data` | Download sources and build the corpus |
 | `npm run build` | Production build |
 | `npm run lint` | ESLint |
+
+## Licence
+
+Code and documentation: [MIT](LICENSE). Freely given.
+
+The biblical text, the lexicons and the word alignment are the work of others
+and keep their own terms — see [`NOTICE.md`](NOTICE.md) before redistributing
+anything built from them.
 
 ## Docs
 
