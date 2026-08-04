@@ -74,8 +74,14 @@ export default function AboutPage() {
         an empty verse.
       </p>
       <p className="mt-3 leading-relaxed text-ink-soft">
-        Square brackets in the English, such as <em>[the]</em>, mark words the translators supplied
-        for sense that have no separate word in the original.
+        The verse you read is the publisher&apos;s own text, word for word. The interlinear tables
+        that align it to the original are separate, and occasionally leave a quotation unclosed, so
+        the published edition is used for reading and the aligned words are laid over it.
+      </p>
+      <p className="mt-3 leading-relaxed text-ink-soft">
+        Words the translators supplied for English sense, with no separate word behind them in the
+        original, are shown in a lighter tone in the reading line and bracketed in the interlinear,
+        as <em>[the]</em>.
       </p>
 
       <h2 className="mt-10 font-serif text-xl">Your files</h2>

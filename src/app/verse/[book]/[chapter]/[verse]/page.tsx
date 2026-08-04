@@ -102,7 +102,7 @@ export default async function VersePage({ params }: Props) {
       <h1 className="mt-2 font-serif text-2xl tracking-tight">{verse.ref}</h1>
 
       <section className="mt-6 rounded-xl border border-rule bg-paper-raised p-6 sm:p-8">
-        <ReadingLine words={words} poetry={poetry} />
+        <ReadingLine words={words} text={verse.text} poetry={poetry} />
         <p className="mt-6 border-t border-rule pt-3 text-xs text-ink-faint">
           Hover any word for the original behind it · click to keep it open · Berean Study Bible
         </p>

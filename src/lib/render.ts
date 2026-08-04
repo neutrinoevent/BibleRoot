@@ -62,6 +62,88 @@ export function hasEnglish(word: AnnotatedWord): boolean {
   return !isEnglishPlaceholder(word.english);
 }
 
+/**
+ * The tables bracket words the translators supplied for English sense that have
+ * no separate word in the original — `[His]` one and only Son, He `{will}`
+ * crush. The published Berean text prints them plainly, so the markers are
+ * presentation only.
+ */
+export interface TextSegment {
+  text: string;
+  supplied: boolean;
+}
+
+export function splitSupplied(value: string): TextSegment[] {
+  const segments: TextSegment[] = [];
+  let index = 0;
+  for (const match of value.matchAll(/[[{]([^\]}]*)[\]}]/g)) {
+    if (match.index > index) {
+      segments.push({ text: value.slice(index, match.index), supplied: false });
+    }
+    if (match[1]) segments.push({ text: match[1], supplied: true });
+    index = match.index + match[0].length;
+  }
+  if (index < value.length) segments.push({ text: value.slice(index), supplied: false });
+  return segments.filter((segment) => segment.text.length > 0);
+}
+
+export function stripSuppliedMarkers(value: string): string {
+  return value.replace(/[[\]{}]/g, "");
+}
+
+export interface AlignedSegment {
+  text: string;
+  /** Index into the word array, or null for punctuation between words. */
+  wordIndex: number | null;
+  supplied: boolean;
+}
+
+/**
+ * Lays the word chunks over the published verse text.
+ *
+ * The interlinear tables do not always record a closing quotation mark, so text
+ * assembled purely from word chunks can differ from the published edition by a
+ * character or two. The published text is therefore what gets displayed, and
+ * each chunk is located within it by scanning forward — anything between two
+ * chunks (punctuation, a quotation mark the tables omitted) is rendered as
+ * plain text that simply is not hoverable.
+ */
+export function alignWordsToText(words: AnnotatedWord[], text: string): AlignedSegment[] {
+  const segments: AlignedSegment[] = [];
+  let cursor = 0;
+
+  words.forEach((word, index) => {
+    const raw = word.english?.trim();
+    if (!raw || isEnglishPlaceholder(raw)) return;
+
+    const supplied = /^[[{].*[\]}]$/.test(raw);
+    const needle = stripSuppliedMarkers(raw).trim();
+    if (!needle) return;
+
+    const found = text.indexOf(needle, cursor);
+    if (found < 0) return; // chunk not in the published wording; skip quietly
+
+    if (found > cursor) {
+      segments.push({ text: text.slice(cursor, found), wordIndex: null, supplied: false });
+    }
+    segments.push({ text: needle, wordIndex: index, supplied });
+    cursor = found + needle.length;
+  });
+
+  if (cursor < text.length) {
+    segments.push({ text: text.slice(cursor), wordIndex: null, supplied: false });
+  }
+  return segments;
+}
+
+/**
+ * The Berean text closes its em-dashes up against the surrounding words, while
+ * the source column pads them with spaces.
+ */
+export function normalizeDashes(value: string): string {
+  return value.replace(/\s*—\s*/g, "—");
+}
+
 export interface DisplayPiece {
   /** Index into the original word array, for hover targeting. */
   index: number;

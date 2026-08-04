@@ -2,12 +2,14 @@
 
 import { useEffect, useRef, useState } from "react";
 
-import { buildDisplayPieces, type AnnotatedWord } from "@/lib/render";
+import { alignWordsToText, type AnnotatedWord } from "@/lib/render";
 import { WordPopover } from "./WordPopover";
 
 interface Props {
   words: AnnotatedWord[];
-  /** Poetry line breaks read well in Psalms; prose is better as one block. */
+  /** The published verse text. Word chunks are laid over it. */
+  text: string;
+  /** Poetry reads better broken into lines; prose reads better as a block. */
   poetry?: boolean;
 }
 
@@ -19,8 +21,23 @@ interface Active {
 
 const CLOSE_DELAY = 120;
 
-export function ReadingLine({ words, poetry = false }: Props) {
-  const pieces = buildDisplayPieces(words);
+function indentFor(para: string | null): number {
+  if (!para) return 0;
+  if (para.startsWith("indent2") || para === "indentred2") return 2;
+  if (para.startsWith("indent1") || para === "indentred1" || para.startsWith("list")) return 1;
+  if (para === "selah") return 3;
+  return 0;
+}
+
+function startsLine(para: string | null): boolean {
+  if (!para) return false;
+  return (
+    para.startsWith("indent") || para.startsWith("list") || para === "selah" || para === "tab1stline"
+  );
+}
+
+export function ReadingLine({ words, text, poetry = false }: Props) {
+  const segments = alignWordsToText(words, text);
   const [active, setActive] = useState<Active | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -90,34 +107,43 @@ export function ReadingLine({ words, poetry = false }: Props) {
   return (
     <>
       <p className="font-serif text-[1.6rem] leading-[1.75] text-ink sm:text-[1.75rem]">
-        {pieces.map((piece, order) => {
-          const hasRoot = Boolean(piece.word.strongs);
-          const isActive = active?.index === piece.index;
+        {segments.map((segment, order) => {
+          if (segment.wordIndex === null) {
+            return <span key={order}>{segment.text}</span>;
+          }
+
+          const word = words[segment.wordIndex];
+          const isActive = active?.index === segment.wordIndex;
+          const hasRoot = Boolean(word.strongs);
+          const lineBreak = poetry && order > 0 && startsLine(word.para);
+          const indent = indentFor(word.para);
+
           return (
-            <span key={piece.index}>
-              {poetry && piece.breakBefore && (
+            <span key={order}>
+              {lineBreak && (
                 <>
                   <br />
-                  {piece.indent > 0 && (
+                  {indent > 0 && (
                     <span
                       aria-hidden
-                      style={{ display: "inline-block", width: `${piece.indent * 1.25}rem` }}
+                      style={{ display: "inline-block", width: `${indent * 1.25}rem` }}
                     />
                   )}
                 </>
               )}
-              {order > 0 && !(poetry && piece.breakBefore) ? " " : ""}
-              {piece.prefix}
               <button
                 type="button"
-                data-word-chunk={piece.index}
-                onPointerEnter={(event) => show(piece.index, event.currentTarget)}
+                data-word-chunk={segment.wordIndex}
+                onPointerEnter={(event) => show(segment.wordIndex!, event.currentTarget)}
                 onPointerLeave={scheduleClose}
-                onFocus={(event) => show(piece.index, event.currentTarget)}
+                onFocus={(event) => show(segment.wordIndex!, event.currentTarget)}
                 onBlur={scheduleClose}
-                onClick={(event) => show(piece.index, event.currentTarget, true)}
+                onClick={(event) => show(segment.wordIndex!, event.currentTarget, true)}
                 aria-expanded={isActive}
+                title={segment.supplied ? "Supplied by the translators for sense" : undefined}
                 className={`cursor-pointer rounded-[3px] px-[1px] transition-colors duration-100 ${
+                  segment.supplied ? "text-ink-soft" : ""
+                } ${
                   isActive
                     ? "bg-highlight"
                     : hasRoot
@@ -125,9 +151,8 @@ export function ReadingLine({ words, poetry = false }: Props) {
                       : "hover:bg-paper-sunken"
                 }`}
               >
-                {piece.text}
+                {segment.text}
               </button>
-              {piece.suffix}
             </span>
           );
         })}

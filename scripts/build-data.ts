@@ -21,7 +21,12 @@ import { fileURLToPath } from "node:url";
 import ExcelJS from "exceljs";
 
 import { BOOKS, BOOKS_BY_NAME } from "../src/lib/books.ts";
-import { isEnglishPlaceholder, stripPlaceholderMarks } from "../src/lib/render.ts";
+import {
+  isEnglishPlaceholder,
+  normalizeDashes,
+  stripPlaceholderMarks,
+  stripSuppliedMarkers,
+} from "../src/lib/render.ts";
 import { buildDeepLexicons, type DeepEntry } from "./deep-lexicons.ts";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -53,6 +58,11 @@ const SOURCES = [
     file: "tbesg.txt",
     url: "https://raw.githubusercontent.com/STEPBible/STEPBible-Data/master/Lexicons/TBESG%20-%20Translators%20Brief%20lexicon%20of%20Extended%20Strongs%20for%20Greek%20-%20STEPBible.org%20CC%20BY.txt",
     label: "Tyndale brief Greek lexicon",
+  },
+  {
+    file: "bsb.txt",
+    url: "https://bereanbible.com/bsb.txt",
+    label: "Berean Standard Bible, plain text (used to verify the assembled text)",
   },
   {
     file: "BrownDriverBriggs.xml",
@@ -523,14 +533,17 @@ function buildVerseText(words: RawWord[]): string {
 
   if (pendingPrefix && pieces.length > 0) pieces[pieces.length - 1] += pendingPrefix;
 
-  return pieces
+  const joined = pieces
     .join(" ")
     .replace(/\s+/g, " ")
     // Opening marks hug the word that follows, closing marks the one before.
-    // Spaced em-dashes are deliberately left alone.
-    .replace(/([“‘([])\s+/g, "$1")
-    .replace(/\s+([,.;:!?”’)\]])/g, "$1")
-    .trim();
+    .replace(/([“‘(])\s+/g, "$1")
+    .replace(/\s+([,.;:!?”’)])/g, "$1");
+
+  // The stored text is reading text, so the bracket markers come off here. They
+  // stay on the individual words, where the interlinear still shows which parts
+  // the translators supplied.
+  return normalizeDashes(stripSuppliedMarkers(joined)).replace(/\s+/g, " ").trim();
 }
 
 async function importCorpus(db: DatabaseSync) {
@@ -650,7 +663,20 @@ async function importCorpus(db: DatabaseSync) {
 
       const original = cellText(values[COL.original])?.trim() || null;
       const rawEnglish = cellText(values[COL.english])?.trim() || null;
-      if (!original && !rawEnglish) continue; // padding row
+      const prefix = stripMarkup(cellText(values[COL.beginQuote]));
+      const suffix = stripMarkup(
+        `${cellText(values[COL.punctuation]) ?? ""}${cellText(values[COL.endQuote]) ?? ""}`,
+      );
+
+      if (!original && !rawEnglish) {
+        // A row with no word of its own can still close a quotation. Fold that
+        // punctuation onto the previous word rather than dropping the row.
+        if ((prefix || suffix) && buffer.length > 0) {
+          const last = buffer[buffer.length - 1];
+          last.suffix = `${last.suffix ?? ""}${prefix ?? ""}${suffix ?? ""}` || null;
+        }
+        continue;
+      }
       const english = cleanEnglish(rawEnglish);
 
       const language = cellText(values[COL.language])?.trim() || null;
@@ -676,10 +702,8 @@ async function importCorpus(db: DatabaseSync) {
         parsingLong: cellText(values[COL.parsingLong])?.trim() || null,
         strongs,
         english,
-        prefix: stripMarkup(cellText(values[COL.beginQuote])),
-        suffix: stripMarkup(
-          `${cellText(values[COL.punctuation]) ?? ""}${cellText(values[COL.endQuote]) ?? ""}`,
-        ),
+        prefix,
+        suffix,
         para: paragraphClass(cellText(values[COL.para])),
       });
 
@@ -694,6 +718,123 @@ async function importCorpus(db: DatabaseSync) {
   db.exec("COMMIT");
   log(`imported ${verseCount.toLocaleString()} verses / ${wordCount.toLocaleString()} words`);
   if (skipped > 0) log(`skipped ${skipped} unmapped verse blocks`);
+}
+
+/**
+ * The verse text here is assembled from individual word chunks, which is easy
+ * to get subtly wrong — a dropped closing quote, a stray marker, an em-dash
+ * spaced differently. The publisher also releases the same translation as plain
+ * text, so every assembled verse is compared against it.
+ */
+async function readPublishedText(): Promise<Map<string, string>> {
+  const raw = await readFile(path.join(SOURCE_DIR, "bsb.txt"), "utf8");
+  const published = new Map<string, string>();
+  for (const line of raw.split(/\r?\n/)) {
+    const tab = line.indexOf("\t");
+    if (tab < 0) continue;
+    const ref = line.slice(0, tab).trim();
+    if (!/^[\w ]+ \d+:\d+$/.test(ref)) continue;
+    published.set(ref, line.slice(tab + 1).replace(/\s+/g, " ").trim());
+  }
+  return published;
+}
+
+/**
+ * Replaces the assembled text with the publisher's own plain-text edition.
+ *
+ * Text stitched together from word chunks is very nearly right, but the tables
+ * omit some closing quotation marks, so a few thousand verses ended a
+ * quotation without closing it. The publisher releases the same translation as
+ * public-domain plain text, so that is used verbatim for anything a reader
+ * reads, and the word chunks are aligned onto it at render time.
+ */
+async function applyPublishedText(db: DatabaseSync) {
+  const published = await readPublishedText();
+  const rows = db.prepare("SELECT id, ref, text FROM verses").all() as Array<{
+    id: number;
+    ref: string;
+    text: string;
+  }>;
+
+  const update = db.prepare("UPDATE verses SET text = ? WHERE id = ?");
+  const updateFts = db.prepare("UPDATE verses_fts SET text = ? WHERE rowid = ?");
+
+  let replaced = 0;
+  let identical = 0;
+  let absent = 0;
+
+  db.exec("BEGIN");
+  for (const row of rows) {
+    const official = published.get(row.ref);
+    if (official === undefined) {
+      absent += 1;
+      continue;
+    }
+    if (official === row.text.replace(/\s+/g, " ").trim()) {
+      identical += 1;
+      continue;
+    }
+    update.run(official, row.id);
+    updateFts.run(official, row.id);
+    replaced += 1;
+  }
+  db.exec("COMMIT");
+
+  log(
+    `published text: ${identical.toLocaleString()} verses already matched, ${replaced.toLocaleString()} replaced`,
+  );
+  if (absent > 0) {
+    throw new Error(`${absent} verses have no published text to fall back on`);
+  }
+}
+
+/**
+ * Each word chunk must be locatable, in order, within the published text —
+ * otherwise the reading line would silently lose its hover targets.
+ */
+function verifyWordAlignment(db: DatabaseSync) {
+  const rows = db.prepare("SELECT id, text FROM verses").all() as Array<{
+    id: number;
+    text: string;
+  }>;
+  const wordsFor = db.prepare(
+    "SELECT english FROM words WHERE verse_id = ? ORDER BY pos",
+  );
+
+  let total = 0;
+  let located = 0;
+  const poor: number[] = [];
+
+  for (const row of rows) {
+    const words = wordsFor.all(row.id) as Array<{ english: string | null }>;
+    let cursor = 0;
+    let verseTotal = 0;
+    let verseLocated = 0;
+    for (const word of words) {
+      const raw = word.english?.trim();
+      if (!raw || isEnglishPlaceholder(raw)) continue;
+      const needle = stripSuppliedMarkers(raw).trim();
+      if (!needle) continue;
+      verseTotal += 1;
+      const found = row.text.indexOf(needle, cursor);
+      if (found >= 0) {
+        verseLocated += 1;
+        cursor = found + needle.length;
+      }
+    }
+    total += verseTotal;
+    located += verseLocated;
+    if (verseTotal > 0 && verseLocated / verseTotal < 0.5) poor.push(row.id);
+  }
+
+  const rate = total > 0 ? (100 * located) / total : 0;
+  log(
+    `word alignment: ${located.toLocaleString()}/${total.toLocaleString()} chunks located in the published text (${rate.toFixed(2)}%)`,
+  );
+  if (poor.length > 0) log(`  ${poor.length} verses aligned under half their chunks`);
+  if (rate < 97) {
+    throw new Error(`Only ${rate.toFixed(2)}% of word chunks align; hover coverage has regressed.`);
+  }
 }
 
 function finalize(db: DatabaseSync) {
@@ -722,16 +863,30 @@ async function main() {
   await mkdir(path.join(ROOT, "data"), { recursive: true });
   await ensureSources();
 
-  if (await exists(DB_PATH)) await unlink(DB_PATH);
-  const db = new DatabaseSync(DB_PATH);
+  // Build into a scratch file and swap it in at the end. A dev server watching
+  // the database then only ever sees a complete one, and cannot hold a lock on
+  // the file being written.
+  const building = `${DB_PATH}.building`;
+  for (const stale of [building, `${building}-shm`, `${building}-wal`]) {
+    if (await exists(stale)) await unlink(stale);
+  }
+  const db = new DatabaseSync(building);
 
   createSchema(db);
   importBooks(db);
   await importLexicons(db);
   await importDeepLexicons(db);
   await importCorpus(db);
+  await applyPublishedText(db);
+  verifyWordAlignment(db);
   finalize(db);
   db.close();
+
+  const { rename } = await import("node:fs/promises");
+  for (const stale of [DB_PATH, `${DB_PATH}-shm`, `${DB_PATH}-wal`]) {
+    if (await exists(stale)) await unlink(stale);
+  }
+  await rename(building, DB_PATH);
 
   const { size } = await stat(DB_PATH);
   log(`done → data/bibleroot.db (${(size / 1e6).toFixed(1)} MB)`);
