@@ -145,6 +145,54 @@ export function getOccurrences(strongsId: string, limit: number, offset = 0): Oc
   );
 }
 
+export interface InflectedForm {
+  original: string;
+  parsing: string | null;
+  parsing_long: string | null;
+  c: number;
+}
+
+/**
+ * Every word in the text is an inflected form; the lexicon files them under a
+ * single dictionary form. ἡμῶν, μου and με all belong to ἐγώ, so a term page
+ * needs to show the forms as well as the headword.
+ */
+export function getInflectedForms(strongsId: string): InflectedForm[] {
+  const rows = queryAll<InflectedForm>(
+    `SELECT original,
+            MIN(parsing)      AS parsing,
+            MIN(parsing_long) AS parsing_long,
+            COUNT(*)          AS c
+       FROM words
+      WHERE strongs = ? AND original IS NOT NULL
+      GROUP BY original
+      ORDER BY c DESC`,
+    [strongsId],
+  );
+
+  // A word starting a sentence is capitalised, which SQLite's ASCII-only
+  // lower() will not fold for Greek or Hebrew. Merge those here so the same
+  // form does not appear twice, keeping the commonest spelling as the label.
+  const merged = new Map<string, InflectedForm>();
+  for (const row of rows) {
+    const key = `${row.original.toLowerCase()}|${row.parsing ?? ""}`;
+    const existing = merged.get(key);
+    if (existing) existing.c += row.c;
+    else merged.set(key, { ...row });
+  }
+  return [...merged.values()].sort((a, b) => b.c - a.c);
+}
+
+/** The parsing recorded for a particular surface form, for the arrival note. */
+export function describeForm(strongsId: string, original: string): InflectedForm | null {
+  return queryOne<InflectedForm>(
+    `SELECT original, parsing, parsing_long, COUNT(*) AS c
+       FROM words
+      WHERE strongs = ? AND original = ?`,
+    [strongsId, original],
+  );
+}
+
 export function countOccurrences(strongsId: string): number {
   return (
     queryOne<{ c: number }>("SELECT COUNT(*) AS c FROM words WHERE strongs = ?", [strongsId])

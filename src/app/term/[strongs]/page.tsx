@@ -9,7 +9,9 @@ import { SaveTermButton } from "@/components/SaveTermButton";
 import { BOOKS_BY_ID } from "@/lib/books";
 import {
   countOccurrences,
+  describeForm,
   getDeepLexiconEntries,
+  getInflectedForms,
   getOccurrences,
   getOccurrenceSpread,
   getStrongs,
@@ -21,7 +23,7 @@ import { applyCustomTermResources, termResources } from "@/lib/resources";
 
 interface Props {
   params: Promise<{ strongs: string }>;
-  searchParams: Promise<{ show?: string }>;
+  searchParams: Promise<{ show?: string; form?: string }>;
 }
 
 const PAGE_SIZE = 40;
@@ -38,7 +40,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TermPage({ params, searchParams }: Props) {
   const { strongs: raw } = await params;
-  const { show } = await searchParams;
+  const { show, form } = await searchParams;
   const strongs = raw.toUpperCase();
 
   if (!/^[HG]\d+$/.test(strongs)) notFound();
@@ -50,6 +52,8 @@ export default async function TermPage({ params, searchParams }: Props) {
   const occurrences = getOccurrences(strongs, limit);
   const spread = getOccurrenceSpread(strongs);
   const deepEntries = getDeepLexiconEntries(strongs);
+  const forms = getInflectedForms(strongs);
+  const arrivedFrom = form ? describeForm(strongs, form) : null;
   const [saved, notes, custom] = await Promise.all([
     getTerm(strongs),
     notesForStrongs(strongs),
@@ -114,6 +118,27 @@ export default async function TermPage({ params, searchParams }: Props) {
         />
       </header>
 
+      {arrivedFrom && arrivedFrom.original.toLowerCase() !== entry.lemma?.toLowerCase() && (
+        <p className="mt-6 rounded-lg border border-rule bg-paper-sunken px-4 py-3 text-sm text-ink-soft">
+          You came from{" "}
+          <span
+            className={`${scriptClass} text-lg`}
+            dir={isGreek ? "ltr" : "rtl"}
+            lang={isGreek ? "el" : "he"}
+          >
+            {arrivedFrom.original}
+          </span>
+          {arrivedFrom.parsing_long && (
+            <span className="text-ink-faint"> ({arrivedFrom.parsing_long})</span>
+          )}
+          . Lexicons file every inflected form under a single headword, which here is{" "}
+          <span className={scriptClass} dir={isGreek ? "ltr" : "rtl"}>
+            {entry.lemma}
+          </span>
+          .
+        </p>
+      )}
+
       {entry.gloss && (
         <p className="mt-8 font-serif text-2xl leading-snug text-ink">{entry.gloss}</p>
       )}
@@ -156,6 +181,53 @@ export default async function TermPage({ params, searchParams }: Props) {
           </div>
         )}
       </dl>
+
+      {forms.length > 1 && (
+        <section className="mt-10">
+          <h2 className="font-serif text-lg">
+            How it appears in the text{" "}
+            <span className="text-sm font-normal text-ink-faint">
+              ({forms.length} forms)
+            </span>
+          </h2>
+          <p className="mt-1 text-sm text-ink-faint">
+            The same word, inflected. All of these are filed under{" "}
+            <span className={scriptClass} dir={isGreek ? "ltr" : "rtl"}>
+              {entry.lemma}
+            </span>
+            .
+          </p>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {forms.slice(0, 40).map((item) => {
+              const isArrival =
+                arrivedFrom?.original.toLowerCase() === item.original.toLowerCase();
+              return (
+                <li
+                  key={item.original}
+                  title={item.parsing_long ?? item.parsing ?? undefined}
+                  className={`rounded-lg border px-3 py-2 text-center ${
+                    isArrival ? "border-accent bg-highlight" : "border-rule bg-paper-raised"
+                  }`}
+                >
+                  <span
+                    className={`${scriptClass} block text-lg`}
+                    dir={isGreek ? "ltr" : "rtl"}
+                    lang={isGreek ? "el" : "he"}
+                  >
+                    {item.original}
+                  </span>
+                  <span className="block font-mono text-[10px] text-ink-faint">
+                    {item.parsing ?? ""} · {item.c.toLocaleString()}
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+          {forms.length > 40 && (
+            <p className="mt-2 text-xs text-ink-faint">and {forms.length - 40} more</p>
+          )}
+        </section>
+      )}
 
       <DeepLexicon entries={deepEntries} />
 

@@ -108,6 +108,18 @@ ellipses do exist: Genesis 3:22, Exodus 32:32, Matthew 9:6, Mark 2:10, Mark
 11:32 and Ephesians 3:1 trail off deliberately. Those arrive on the punctuation
 column, which is why stripping only the English column is safe.
 
+**A term page is about the dictionary form, never the form in the verse.** Every
+word in the text is inflected, and the lexicon files them all under one
+headword: ἡμῶν, μου and με are all ἐγώ (G1473, 18 distinct forms); קַוֵּה is
+קָוָה (H6960, 45 forms). This reads as a broken link if the page does not say
+so, so the hover card names the dictionary form under "Listed as", "Go deeper"
+carries `?form=` with the surface form, and the term page opens by explaining
+the relationship and lists every form in the text.
+
+Forms are merged case-insensitively in `getInflectedForms`, because a word
+starting a sentence is capitalised and SQLite's `lower()` is ASCII-only, so
+Ἐγὼ and ἐγὼ would otherwise appear as two forms.
+
 **`[His]` and `{will}` are markup.** Both bracket forms mark words the
 translators supplied for English sense. The published text prints them plainly,
 so the reading line shows them in a lighter tone and the interlinear keeps the

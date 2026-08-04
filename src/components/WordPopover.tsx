@@ -81,12 +81,25 @@ export function WordPopover({ word, anchor, pinned, onClose }: Props) {
         )}
         {word.strongs && (
           <div className="flex gap-2">
-            <dt className="w-16 shrink-0 text-xs uppercase tracking-wide text-ink-faint">Root</dt>
+            <dt className="w-16 shrink-0 text-xs uppercase tracking-wide text-ink-faint">
+              Listed as
+            </dt>
             <dd className="text-ink-soft">
-              <span className={`font-mono text-xs ${accent}`}>{word.strongs}</span>
+              {/* The lexicon files this word under its dictionary form, which is
+                  usually not the form standing in the verse. Naming it here
+                  means the term page is not a surprise. */}
+              {word.lemma && (
+                <span
+                  className={`${script === "hebrew" ? "font-hebrew" : "font-greek"} ${accent} text-base`}
+                  dir={script === "hebrew" ? "rtl" : "ltr"}
+                >
+                  {word.lemma}
+                </span>
+              )}
+              <span className={`ml-2 font-mono text-xs ${accent}`}>{word.strongs}</span>
               {word.occurrences ? (
                 <span className="ml-2 text-xs text-ink-faint">
-                  {word.occurrences.toLocaleString()}× in Scripture
+                  {word.occurrences.toLocaleString()}× in this text
                 </span>
               ) : null}
             </dd>
@@ -105,7 +118,11 @@ export function WordPopover({ word, anchor, pinned, onClose }: Props) {
       <div className="mt-3 flex items-center justify-between gap-3 border-t border-rule pt-3">
         {word.strongs ? (
           <Link
-            href={`/term/${word.strongs}`}
+            // Carrying the surface form lets the term page open by explaining
+            // how this form relates to the headword.
+            href={`/term/${word.strongs}${
+              word.original ? `?form=${encodeURIComponent(word.original)}` : ""
+            }`}
             className="text-sm font-medium text-accent hover:underline"
           >
             Go deeper →
