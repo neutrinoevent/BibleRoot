@@ -197,6 +197,12 @@ export default async function FormPage({ params, searchParams }: Props) {
         </section>
       )}
 
+      <ResourceLinks
+        links={links}
+        heading="Take it further"
+        blurb="Reference tools for this word. They are organised by root, so they open at the dictionary form."
+      />
+
       <section className="mt-10">
         <h2 className="font-serif text-lg">
           Every occurrence of this form{" "}
@@ -237,12 +243,6 @@ export default async function FormPage({ params, searchParams }: Props) {
           </Link>
         )}
       </section>
-
-      <ResourceLinks
-        links={links}
-        heading="Take it further"
-        blurb="Reference tools for this word. They are organised by root, so they open at the dictionary form."
-      />
 
       <section className="mt-12">
         <NotesPanel
