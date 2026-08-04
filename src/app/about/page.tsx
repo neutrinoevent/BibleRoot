@@ -93,7 +93,7 @@ export default function AboutPage() {
 
       <h2 className="mt-10 font-serif text-xl">Who made this</h2>
       <p className="mt-3 leading-relaxed text-ink-soft">
-        BibleRoot was built by Alex Nichols. If you have a question, spot something wrong in the
+        BibleRoot was built by Alexander Nichols. If you have a question, spot something wrong in the
         text or the lexicons, or want to suggest a feature, the best place is the repository:
       </p>
       <ul className="mt-3 space-y-1.5 text-sm">
