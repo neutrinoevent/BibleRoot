@@ -151,6 +151,7 @@ export function getOccurrences(strongsId: string, limit: number, offset = 0): Oc
 
 export interface InflectedForm {
   original: string;
+  translit: string | null;
   parsing: string | null;
   parsing_long: string | null;
   c: number;
@@ -164,6 +165,7 @@ export interface InflectedForm {
 export function getInflectedForms(strongsId: string): InflectedForm[] {
   const rows = queryAll<InflectedForm>(
     `SELECT original,
+            MIN(translit)     AS translit,
             MIN(parsing)      AS parsing,
             MIN(parsing_long) AS parsing_long,
             COUNT(*)          AS c
@@ -326,6 +328,21 @@ export function getSharedRoots(verseIds: number[]): SharedRoot[] {
       total: row.total,
       sample: row.sample,
     }));
+}
+
+/** Book distribution for one inflected form, as the root page has for the root. */
+export function getFormSpread(
+  strongsId: string,
+  original: string,
+): Array<{ book_id: number; c: number }> {
+  return queryAll<{ book_id: number; c: number }>(
+    `SELECT v.book_id, COUNT(*) AS c
+       FROM words w JOIN verses v ON v.id = w.verse_id
+      WHERE w.strongs = ? AND w.original = ? COLLATE NOCASE
+      GROUP BY v.book_id
+      ORDER BY c DESC`,
+    [strongsId, original],
+  );
 }
 
 export function countFormOccurrences(strongsId: string, original: string): number {

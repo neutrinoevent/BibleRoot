@@ -11,36 +11,12 @@ Shipped through `v7`: the reader and hover lookup, scholarly lexicons, external
 deep links, multi-verse selection with shared-root tracing, inflected forms as
 first-class pages, and all 31,102 verses including the disputed sixteen.
 
-Being worked on next: **making form pages as substantial as root pages**. A form
-page currently carries its grammar, renderings, siblings and occurrences; a root
-page carries the lexicons, the book distribution and the full concordance. The
-gap is listed under "In progress" below.
+Form pages now carry their own weight: the compound word broken into its parts,
+the transliteration, the grammar explained, renderings, sibling forms, a book
+distribution and the full concordance for that exact form, with the root's
+definition on the card that leads up to it.
 
 ---
-
-## In progress — depth for the inflected form
-
-### Decompose the compound word
-
-The single largest gap. **142,743 of 443,832 words — 32% of the corpus — carry a
-compound parsing**, where one written word holds a prefix, a stem and a suffix.
-`מֵהוֹנֶךָ` parses as `Prep-m | N-msc | 2ms`: the preposition מִן ("from"), הוֹן
-in the construct state, and a second-person masculine singular suffix ("your").
-The page says nothing about any of it.
-
-Splitting the parsing on `|` and explaining each part — what the prefix is, why
-the stem is in construct, whom the suffix refers to — is the deepest thing
-available for a Hebrew form and applies to a third of the text.
-
-### The smaller gaps on a form page
-
-- **Transliteration of the form.** Held in `words.translit` but not carried by
-  `InflectedForm`, so the header shows the Hebrew and the parsing with no way to
-  pronounce it.
-- **Where this form appears.** Root pages show a book distribution; forms do not,
-  though the query is the same with one more condition.
-- **The lexicon definition inline.** A reader on a form page has to travel to the
-  root to learn what the word means at all.
 
 ---
 

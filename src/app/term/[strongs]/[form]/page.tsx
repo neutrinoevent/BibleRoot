@@ -5,17 +5,19 @@ import type { Metadata } from "next";
 import { NotesPanel } from "@/components/NotesPanel";
 import { ResourceLinks } from "@/components/ResourceLinks";
 import { SaveTermButton } from "@/components/SaveTermButton";
+import { BOOKS_BY_ID } from "@/lib/books";
 import {
   countFormOccurrences,
   getForm,
   getFormOccurrences,
+  getFormSpread,
   getInflectedForms,
   getRenderings,
   getStrongs,
 } from "@/lib/corpus";
 import { getTerm, notesForStrongs, readCustomResources } from "@/lib/library";
 import { hrefForBookId } from "@/lib/refs";
-import { explainParsing } from "@/lib/morphology";
+import { decomposeParsing, explainParsing } from "@/lib/morphology";
 import { isEnglishPlaceholder } from "@/lib/render";
 import { applyCustomTermResources, termResources } from "@/lib/resources";
 
@@ -60,6 +62,10 @@ export default async function FormPage({ params, searchParams }: Props) {
     (item) => item.original.toLowerCase() !== form.original.toLowerCase(),
   );
   const grammar = explainParsing(form.parsing_long, entry.language);
+  const parts = decomposeParsing(form.parsing_long);
+  const spread = getFormSpread(strongs, form.original);
+  const topBooks = spread.slice(0, 8);
+  const maxCount = topBooks[0]?.c ?? 1;
 
   const [saved, notes, custom] = await Promise.all([
     getTerm(strongs),
@@ -96,7 +102,10 @@ export default async function FormPage({ params, searchParams }: Props) {
           >
             {form.original}
           </p>
-          <p className="mt-2 font-serif text-lg italic text-ink-soft">{form.parsing_long}</p>
+          {form.translit && (
+            <p className="mt-2 font-serif text-lg italic text-ink-soft">{form.translit}</p>
+          )}
+          <p className="mt-1 text-sm text-ink-soft">{form.parsing_long}</p>
           <p className="mt-1 text-sm text-ink-faint">
             {total.toLocaleString()} occurrence{total === 1 ? "" : "s"} of this exact form
           </p>
@@ -131,7 +140,47 @@ export default async function FormPage({ params, searchParams }: Props) {
           </span>
         </span>
         {entry.gloss && <span className="mt-2 block text-sm text-ink">{entry.gloss}</span>}
+        {entry.definition && (
+          <span className="mt-1 block text-sm leading-relaxed text-ink-soft">
+            {entry.definition}
+          </span>
+        )}
       </Link>
+
+      {parts.length > 0 && (
+        <section className="mt-10">
+          <h2 className="font-serif text-lg">What this word is built from</h2>
+          <p className="mt-1 text-sm text-ink-faint">
+            Written as one word, carrying several. Hebrew attaches its short prepositions, its
+            article and its pronouns rather than spacing them out.
+          </p>
+          <ol className="mt-3 space-y-2">
+            {parts.map((part, index) => (
+              <li
+                key={`${part.role}-${index}`}
+                className="flex gap-3 rounded-lg border border-rule bg-paper-raised p-4"
+              >
+                <span className="w-14 shrink-0 text-xs uppercase tracking-wide text-ink-faint">
+                  {part.role}
+                </span>
+                <span className="min-w-0">
+                  <span className="flex flex-wrap items-baseline gap-2">
+                    {part.form && (
+                      <span className={`${scriptClass} text-xl`} dir={dir}>
+                        {part.form}
+                      </span>
+                    )}
+                    <span className="font-medium text-ink">{part.label}</span>
+                  </span>
+                  <span className="mt-1 block text-sm leading-relaxed text-ink-soft">
+                    {part.meaning}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
 
       {grammar.length > 0 && (
         <section className="mt-10">
@@ -153,7 +202,7 @@ export default async function FormPage({ params, searchParams }: Props) {
             Rendered in English as{" "}
             <span className="text-sm font-normal text-ink-faint">
               ({renderings.length}
-              {renderings.length === 30 ? "+" : ""} ways)
+              {renderings.length === 30 ? "+" : ""} way{renderings.length === 1 ? "" : "s"})
             </span>
           </h2>
           <ul className="mt-3 flex flex-wrap gap-2">
@@ -193,6 +242,35 @@ export default async function FormPage({ params, searchParams }: Props) {
           </ul>
           {siblings.length > 40 && (
             <p className="mt-2 text-xs text-ink-faint">and {siblings.length - 40} more</p>
+          )}
+        </section>
+      )}
+
+      {topBooks.length > 1 && (
+        <section className="mt-10">
+          <h2 className="font-serif text-lg">Where this form appears</h2>
+          <ul className="mt-3 space-y-1.5">
+            {topBooks.map((row) => {
+              const book = BOOKS_BY_ID.get(row.book_id);
+              if (!book) return null;
+              return (
+                <li key={row.book_id} className="flex items-center gap-3 text-sm">
+                  <span className="w-32 shrink-0 truncate text-ink-soft">{book.name}</span>
+                  <span
+                    className="h-2 rounded-full bg-accent/60"
+                    style={{ width: `${Math.max(4, (row.c / maxCount) * 60)}%` }}
+                    aria-hidden
+                  />
+                  <span className="text-xs text-ink-faint">{row.c}</span>
+                </li>
+              );
+            })}
+          </ul>
+          {spread.length > topBooks.length && (
+            <p className="mt-2 text-xs text-ink-faint">
+              and {spread.length - topBooks.length} more book
+              {spread.length - topBooks.length === 1 ? "" : "s"}
+            </p>
           )}
         </section>
       )}

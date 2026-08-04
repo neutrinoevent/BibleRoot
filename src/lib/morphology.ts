@@ -231,6 +231,185 @@ export function explainParsing(
   return found.sort((a, b) => a.index - b.index).map((item) => item.note);
 }
 
+/* --------------------------------------------------- compound word parts */
+
+/**
+ * A third of the words in the Hebrew Bible are written as one word but built
+ * from several: an inseparable preposition or the conjunction in front, the
+ * stem, and often a pronominal ending. `מֵהוֹנֶךָ` parses as
+ * `Preposition-m | Noun - masculine singular construct | second person
+ * masculine singular` — "from your wealth" in a single written word.
+ *
+ * The parsing names those parts but not what they contribute, which is what a
+ * reader needs.
+ */
+export interface WordPart {
+  role: "prefix" | "stem" | "suffix";
+  /** The Hebrew letter or letters, where the part is a fixed morpheme. */
+  form: string | null;
+  label: string;
+  meaning: string;
+}
+
+/** The inseparable prefixes, keyed by how the parsing names them. */
+const PREFIXES: Array<{ match: RegExp; form: string | null; label: string; meaning: string }> = [
+  {
+    match: /^Conjunctive waw/i,
+    form: "וְ",
+    label: "Conjunctive waw",
+    meaning: "“and”, joining this word to what came before. Hebrew narrative leans on it constantly.",
+  },
+  {
+    match: /^Preposition-b/i,
+    form: "בְּ",
+    label: "Preposition bet",
+    meaning: "“in”, “at”, “by” or “with”, depending on what it governs.",
+  },
+  {
+    match: /^Preposition-l/i,
+    form: "לְ",
+    label: "Preposition lamed",
+    meaning: "“to” or “for”, marking direction, purpose or possession.",
+  },
+  {
+    match: /^Preposition-k/i,
+    form: "כְּ",
+    label: "Preposition kaf",
+    meaning: "“like” or “as”, drawing a comparison.",
+  },
+  {
+    match: /^Preposition-m/i,
+    form: "מִן",
+    label: "Preposition min",
+    meaning: "“from” or “out of”, marking source, separation or cause.",
+  },
+  {
+    match: /^Article/i,
+    form: "הַ",
+    label: "Article",
+    meaning: "“the”, making the word definite.",
+  },
+  {
+    match: /^Direct object marker/i,
+    form: "אֵת",
+    label: "Direct object marker",
+    meaning:
+      "Untranslated. It marks what follows as the definite object of the verb, a signpost English does without.",
+  },
+  {
+    match: /^Preposition/i,
+    form: null,
+    label: "Preposition",
+    meaning: "Attached to the front of the word rather than standing separately.",
+  },
+];
+
+/** Pronominal endings, by the person and number the parsing names. */
+const SUFFIX_PRONOUNS: Array<{ match: RegExp; possessive: string; object: string }> = [
+  { match: /first person common singular/i, possessive: "my", object: "me" },
+  { match: /first person common plural/i, possessive: "our", object: "us" },
+  { match: /second person masculine singular/i, possessive: "your", object: "you" },
+  { match: /second person feminine singular/i, possessive: "your", object: "you" },
+  { match: /second person masculine plural/i, possessive: "your", object: "you" },
+  { match: /second person feminine plural/i, possessive: "your", object: "you" },
+  { match: /third person masculine singular/i, possessive: "his", object: "him" },
+  { match: /third person feminine singular/i, possessive: "her", object: "her" },
+  { match: /third person masculine plural/i, possessive: "their", object: "them" },
+  { match: /third person feminine plural/i, possessive: "their", object: "them" },
+];
+
+/**
+ * A pronominal ending is a segment that is *only* a person and number. A verb
+ * stem names its own subject agreement the same way — "Verb - Qal - Imperfect -
+ * third person masculine singular" — so matching anywhere in the segment would
+ * mistake the verb itself for a suffix and leave the word with no stem.
+ */
+const BARE_PRONOUN =
+  /^(first|second|third) person\s*(masculine|feminine|common|neuter)?\s*(singular|plural|dual)\d*$/i;
+
+/**
+ * Splits a compound parsing into its parts and says what each contributes.
+ * Returns an empty list for a word written as a single morpheme.
+ */
+export function decomposeParsing(parsingLong: string | null): WordPart[] {
+  if (!parsingLong || !parsingLong.includes("|")) return [];
+
+  const segments = parsingLong
+    .split("|")
+    .map((segment) => segment.trim())
+    .filter(Boolean);
+  if (segments.length < 2) return [];
+
+  // The stem is the segment naming a part of speech rather than a person.
+  let stemIndex = segments.findIndex(
+    (segment) =>
+      !BARE_PRONOUN.test(segment) && !PREFIXES.some((prefix) => prefix.match.test(segment)),
+  );
+
+  // Some words are nothing but a prefix and the morpheme it attaches to, as in
+  // "Conjunctive waw | Direct object marker". There the object marker is the
+  // word, so the last segment that is not a pronoun becomes the stem.
+  if (stemIndex < 0) {
+    for (let index = segments.length - 1; index >= 0; index -= 1) {
+      if (!BARE_PRONOUN.test(segments[index])) {
+        stemIndex = index;
+        break;
+      }
+    }
+  }
+  const stemIsVerb = stemIndex >= 0 && /^Verb/i.test(segments[stemIndex]);
+
+  const parts: WordPart[] = [];
+
+  segments.forEach((segment, index) => {
+    // A prefix segment can name two morphemes at once, "Preposition-b, Article".
+    if (stemIndex < 0 || index < stemIndex) {
+      for (const piece of segment.split(",").map((value) => value.trim())) {
+        const prefix = PREFIXES.find((candidate) => candidate.match.test(piece));
+        if (prefix) {
+          parts.push({ role: "prefix", form: prefix.form, label: prefix.label, meaning: prefix.meaning });
+        }
+      }
+      return;
+    }
+
+    if (index === stemIndex) {
+      parts.push({
+        role: "stem",
+        form: null,
+        label: segment,
+        meaning: "The word itself, carrying the meaning the rest is built around.",
+      });
+      return;
+    }
+
+    if (BARE_PRONOUN.test(segment)) {
+      const pronoun = SUFFIX_PRONOUNS.find((candidate) => candidate.match.test(segment));
+      const rendered = pronoun ? (stemIsVerb ? pronoun.object : pronoun.possessive) : null;
+      parts.push({
+        role: "suffix",
+        form: null,
+        label: segment,
+        meaning: rendered
+          ? stemIsVerb
+            ? `A pronominal ending: the verb acts on “${rendered}”.`
+            : `A pronominal ending: “${rendered}”, attached rather than written separately.`
+          : "A pronominal ending attached to the word.",
+      });
+      return;
+    }
+
+    parts.push({
+      role: "suffix",
+      form: null,
+      label: segment,
+      meaning: "Carried on the end of the same written word.",
+    });
+  });
+
+  return parts;
+}
+
 /** Person and number, spelled out from the parsing where present. */
 export function describePersonNumber(parsingLong: string | null): string | null {
   if (!parsingLong) return null;

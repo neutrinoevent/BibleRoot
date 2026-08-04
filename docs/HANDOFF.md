@@ -3,7 +3,7 @@
 How BibleRoot is built and what tends to catch people out. The README covers
 using the app; this covers working on it.
 
-Current as of `v6`.
+Current as of `v8`.
 
 ## State
 
@@ -17,6 +17,8 @@ Tagged releases on `main` at `neutrinoevent/BibleRoot`:
 | `v4` | Inflected forms as first-class pages, with a grammatical glossary |
 | `v5` | All 31,102 verses present, with a textual-criticism panel on the disputed sixteen |
 | `v6` | Shared-root analysis and cross-verse tracing across a verse selection |
+| `v7` | Hover card reachable on the way to its links |
+| `v8` | Compound words decomposed on form pages |
 
 Everything in the README works and was exercised in a browser.
 
@@ -144,7 +146,23 @@ Forms are merged case-insensitively in `getInflectedForms`, because a word
 starting a sentence is capitalised and SQLite's `lower()` is ASCII-only, so
 Ἐγὼ and ἐγὼ would otherwise appear as two forms.
 
-`src/lib/morphology.ts` holds the grammatical glossary — what a Piel does, what
+`decomposeParsing` in `src/lib/morphology.ts` splits a compound parsing into
+prefix, stem and suffix. **142,743 words — 32% of the corpus — are written as one
+word but built from several**, and all of them decompose. Two traps, both of
+which produced silently wrong output before being caught:
+
+- A verb stem names its own subject agreement, "Verb - Qal - Imperfect - third
+  person masculine singular". Matching a person anywhere in the segment mistakes
+  the verb for a pronominal suffix and leaves the word with no stem, so
+  `BARE_PRONOUN` is anchored to segments that are *only* a person and number.
+- Some words are a prefix plus the morpheme it attaches to, "Conjunctive waw |
+  Direct object marker". The object marker is the word, so when no stem is found
+  the last non-pronoun segment becomes one.
+
+A pronominal suffix means "your" on a noun and "you" on a verb, so the stem's
+part of speech decides which is shown.
+
+`src/lib/morphology.ts` also holds the grammatical glossary — what a Piel does, what
 the genitive conveys. Terms are matched against the expanded parsing longest
 first, with each matched span blanked out, so "Imperfect" is never also read as
 "Perfect" and "Middle or Passive" is not split in two. Add terms there rather
