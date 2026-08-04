@@ -131,10 +131,13 @@ None of this data is stored in the repository — `npm run build:data` fetches i
 from source. See [`NOTICE.md`](NOTICE.md): the MIT licence covers the
 application code only, and the data keeps its own terms.
 
-Sixteen verse numbers — Matthew 17:21, 18:11, 23:14, Mark 7:16, 9:44, 9:46,
-11:26, 15:28, Luke 17:36, 23:17, John 5:4, Acts 8:37, 15:34, 24:7, 28:29 and
-Romans 16:24 — are absent from the manuscripts behind this text. Opening one
-explains the gap rather than showing an empty verse.
+All 31,102 verses are present. Sixteen of them — Matthew 17:21, 18:11, 23:14,
+Mark 7:16, 9:44, 9:46, 11:26, 15:28, Luke 17:36, 23:17, John 5:4, Acts 8:37,
+15:34, 24:7, 28:29 and Romans 16:24 — are absent from the earliest manuscripts,
+so modern editions carry them only in a footnote. BibleRoot shows them in full,
+with the Berean footnote as the reading text, the Greek of the manuscripts that
+do have them, and a panel naming which traditions those are. They hover, link to
+terms and reach the commentaries like any other verse.
 
 ## How it fits together
 

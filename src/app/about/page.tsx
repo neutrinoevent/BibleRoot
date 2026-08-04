@@ -68,10 +68,20 @@ export default function AboutPage() {
 
       <h2 className="mt-10 font-serif text-xl">A note on the text</h2>
       <p className="mt-3 leading-relaxed text-ink-soft">
-        Sixteen verse numbers — Matthew 17:21, 18:11, 23:14, Mark 7:16, 9:44, 9:46, 11:26, 15:28,
-        Luke 17:36, 23:17, John 5:4, Acts 8:37, 15:34, 24:7, 28:29 and Romans 16:24 — are absent
-        from the manuscripts underlying this text. Opening one explains the gap rather than showing
-        an empty verse.
+        Every verse is here — all 31,102. Sixteen of them are a special case: Matthew 17:21,
+        18:11, 23:14, Mark 7:16, 9:44, 9:46, 11:26, 15:28, Luke 17:36, 23:17, John 5:4, Acts 8:37,
+        15:34, 24:7, 28:29 and Romans 16:24. Their numbering comes from Stephanus in 1551, which
+        followed later Greek manuscripts; the earliest copies do not contain them. Modern editions
+        therefore print them only in a footnote, while the King James and other translations from
+        the Traditional Text carry them in full.
+      </p>
+      <p className="mt-3 leading-relaxed text-ink-soft">
+        BibleRoot shows those sixteen in full rather than leaving a blank. The reading text is the
+        Berean footnote, in the publisher&apos;s own wording; the Greek is that of the manuscripts
+        which carry the verse, taken from STEPBible&apos;s amalgamated New Testament; and a panel
+        on the verse names the traditions attesting it. They hover, link through to their terms and
+        reach the commentaries like any other verse, so you can weigh the evidence rather than take
+        anyone&apos;s word for it.
       </p>
       <p className="mt-3 leading-relaxed text-ink-soft">
         The verse you read is the publisher&apos;s own text, word for word. The interlinear tables

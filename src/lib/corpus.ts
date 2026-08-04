@@ -15,6 +15,9 @@ export interface Verse {
   text: string;
   heading: string | null;
   crossref: string | null;
+  footnote: string | null;
+  /** Set when the verse is absent from the earliest manuscripts. */
+  disputed: string | null;
 }
 
 export interface Word {
@@ -32,6 +35,7 @@ export interface Word {
   prefix: string | null;
   suffix: string | null;
   para: string | null;
+  editions: string | null;
 }
 
 export interface StrongsEntry {
@@ -116,7 +120,7 @@ export function getWords(verseId: number): Word[] {
 export function getAnnotatedWords(verseId: number): AnnotatedWord[] {
   return queryAll<AnnotatedWord>(
     `SELECT w.pos, w.src_pos, w.language, w.original, w.translit, w.parsing,
-            w.parsing_long, w.strongs, w.english, w.prefix, w.suffix, w.para,
+            w.parsing_long, w.strongs, w.english, w.prefix, w.suffix, w.para, w.editions,
             s.lemma, s.gloss, s.definition, s.translit AS lemma_translit,
             s.occurrences
        FROM words w
@@ -244,10 +248,19 @@ export function getRenderings(
         [strongsId, limit * 3],
       );
 
-  return rows
-    .filter((row) => !isEnglishPlaceholder(row.english))
-    .map((row) => ({ english: stripSuppliedMarkers(row.english).trim(), c: row.c }))
-    .filter((row) => row.english.length > 0)
+  // Stripping the supplied-word brackets collapses "[it]" and "it" onto the
+  // same wording, so the counts have to be merged rather than listed twice.
+  const merged = new Map<string, number>();
+  for (const row of rows) {
+    if (isEnglishPlaceholder(row.english)) continue;
+    const english = stripSuppliedMarkers(row.english).trim();
+    if (!english) continue;
+    merged.set(english, (merged.get(english) ?? 0) + row.c);
+  }
+
+  return [...merged.entries()]
+    .map(([english, c]) => ({ english, c }))
+    .sort((a, b) => b.c - a.c)
     .slice(0, limit);
 }
 

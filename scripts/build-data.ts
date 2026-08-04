@@ -28,6 +28,12 @@ import {
   stripSuppliedMarkers,
 } from "../src/lib/render.ts";
 import { buildDeepLexicons, type DeepEntry } from "./deep-lexicons.ts";
+import {
+  DISPUTED_VERSES,
+  describeAttribution,
+  extractFootnoteVerse,
+  readTagntVerses,
+} from "./disputed-verses.ts";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const SOURCE_DIR = path.join(ROOT, "data", "sources");
@@ -63,6 +69,16 @@ const SOURCES = [
     file: "bsb.txt",
     url: "https://bereanbible.com/bsb.txt",
     label: "Berean Standard Bible, plain text (used to verify the assembled text)",
+  },
+  {
+    file: "tagnt_mat_jhn.txt",
+    url: "https://raw.githubusercontent.com/STEPBible/STEPBible-Data/master/Translators%20Amalgamated%20OT%2BNT/TAGNT%20Mat-Jhn%20-%20Translators%20Amalgamated%20Greek%20NT%20-%20STEPBible.org%20CC-BY.txt",
+    label: "Amalgamated Greek NT, Matthew-John",
+  },
+  {
+    file: "tagnt_act_rev.txt",
+    url: "https://raw.githubusercontent.com/STEPBible/STEPBible-Data/master/Translators%20Amalgamated%20OT%2BNT/TAGNT%20Act-Rev%20-%20Translators%20Amalgamated%20Greek%20NT%20-%20STEPBible.org%20CC-BY.txt",
+    label: "Amalgamated Greek NT, Acts-Revelation",
   },
   {
     file: "BrownDriverBriggs.xml",
@@ -173,7 +189,11 @@ function createSchema(db: DatabaseSync) {
       ref      TEXT NOT NULL,
       text     TEXT NOT NULL,
       heading  TEXT,
-      crossref TEXT
+      crossref TEXT,
+      footnote TEXT,
+      -- Set on verses absent from the earliest manuscripts, naming the
+      -- traditions that do carry them.
+      disputed TEXT
     );
     CREATE UNIQUE INDEX verses_ref_idx ON verses(book_id, chapter, verse);
 
@@ -191,7 +211,8 @@ function createSchema(db: DatabaseSync) {
       english       TEXT,
       prefix        TEXT,
       suffix        TEXT,
-      para          TEXT
+      para          TEXT,
+      editions      TEXT
     );
     CREATE INDEX words_verse_idx   ON words(verse_id, pos);
     CREATE INDEX words_strongs_idx ON words(strongs);
@@ -548,8 +569,8 @@ function buildVerseText(words: RawWord[]): string {
 
 async function importCorpus(db: DatabaseSync) {
   const insertVerse = db.prepare(`
-    INSERT INTO verses (id, book_id, chapter, verse, ref, text, heading, crossref)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO verses (id, book_id, chapter, verse, ref, text, heading, crossref, footnote)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
   `);
   const insertWord = db.prepare(`
     INSERT INTO words
@@ -567,6 +588,7 @@ async function importCorpus(db: DatabaseSync) {
   let verseRef: string | null = null;
   let heading: string | null = null;
   let crossref: string | null = null;
+  let footnote: string | null = null;
   let buffer: RawWord[] = [];
   let verseCount = 0;
   let wordCount = 0;
@@ -600,7 +622,7 @@ async function importCorpus(db: DatabaseSync) {
     const verse = Number(match[3]);
     const ref = `${book.name} ${chapter}:${verse}`;
 
-    insertVerse.run(verseIndex, book.id, chapter, verse, ref, text, heading, crossref);
+    insertVerse.run(verseIndex, book.id, chapter, verse, ref, text, heading, crossref, footnote);
     insertFts.run(verseIndex, ref, text);
     verseCount += 1;
 
@@ -644,6 +666,7 @@ async function importCorpus(db: DatabaseSync) {
         verseRef = null;
         heading = null;
         crossref = null;
+        footnote = null;
       }
 
       const refCell = cellText(values[COL.verseRef]);
@@ -653,6 +676,21 @@ async function importCorpus(db: DatabaseSync) {
       if (headingCell && !heading) {
         const plain = stripHtml(headingCell.replace(/\|/g, '"'));
         if (plain) heading = plain;
+      }
+
+      const footnoteCell = cellText(values[COL.footnote]);
+      if (footnoteCell) {
+        // Verse numbers inside a footnote are marked up; keep them as ⟨n⟩ so a
+        // verse carried only in a footnote can still be located later.
+        const plain = stripHtml(
+          footnoteCell
+            .replace(/\|/g, '"')
+            .replace(/<span class="fnv">\s*(\d+)\s*<\/span>/gi, "⟨$1⟩"),
+        );
+        // The same footnote can repeat across a verse's rows.
+        if (plain && !footnote?.includes(plain)) {
+          footnote = footnote ? `${footnote} ${plain}` : plain;
+        }
       }
 
       const crossrefCell = cellText(values[COL.crossref]);
@@ -750,7 +788,7 @@ async function readPublishedText(): Promise<Map<string, string>> {
  */
 async function applyPublishedText(db: DatabaseSync) {
   const published = await readPublishedText();
-  const rows = db.prepare("SELECT id, ref, text FROM verses").all() as Array<{
+  const rows = db.prepare("SELECT id, ref, text FROM verses WHERE disputed IS NULL").all() as Array<{
     id: number;
     ref: string;
     text: string;
@@ -837,6 +875,113 @@ function verifyWordAlignment(db: DatabaseSync) {
   }
 }
 
+/**
+ * Restores the sixteen verses that carry a number but no running text.
+ *
+ * The Berean footnote on the preceding verse supplies the reading in the
+ * publisher's own wording, and the amalgamated Greek NT supplies the words with
+ * their Strong's numbers, so these verses behave like any other: hover, an
+ * interlinear, and links through to each term. `verses.disputed` records which
+ * traditions carry the verse, which the reader is shown.
+ *
+ * Parsing is borrowed from the same Greek form where it already appears
+ * elsewhere in the corpus, rather than decoding a second morphology scheme and
+ * risking a wrong description of the grammar.
+ */
+async function restoreDisputedVerses(db: DatabaseSync) {
+  const wanted = new Set(DISPUTED_VERSES.map((verse) => verse.osis));
+  const greekByRef = await readTagntVerses(
+    SOURCE_DIR,
+    ["tagnt_mat_jhn.txt", "tagnt_act_rev.txt"],
+    wanted,
+  );
+
+  const previousFootnote = db.prepare("SELECT footnote FROM verses WHERE id = ?");
+  const borrowParsing = db.prepare(
+    `SELECT parsing, parsing_long FROM words
+      WHERE strongs = ? AND original = ? COLLATE NOCASE AND parsing_long IS NOT NULL
+      LIMIT 1`,
+  );
+  const insertVerse = db.prepare(
+    `INSERT INTO verses (id, book_id, chapter, verse, ref, text, heading, crossref, footnote, disputed)
+     VALUES (?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?)`,
+  );
+  const insertWord = db.prepare(
+    `INSERT INTO words
+       (verse_id, pos, src_pos, language, original, translit, parsing, parsing_long, strongs, english, prefix, suffix, para, editions)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL, NULL, NULL, ?)`,
+  );
+  const insertFts = db.prepare("INSERT INTO verses_fts (rowid, ref, text) VALUES (?, ?, ?)");
+
+  let restored = 0;
+  let wordCount = 0;
+  let borrowed = 0;
+  const missing: string[] = [];
+
+  db.exec("BEGIN");
+  for (const target of DISPUTED_VERSES) {
+    const book = BOOKS_BY_NAME.get(target.bookName);
+    const greek = greekByRef.get(target.osis) ?? [];
+    const note = previousFootnote.get(target.index - 1) as { footnote: string | null } | undefined;
+    const extracted = extractFootnoteVerse(note?.footnote ?? null, target.verse);
+
+    if (!book || !extracted || greek.length === 0) {
+      missing.push(target.osis);
+      continue;
+    }
+
+    const ref = `${book.name} ${target.chapter}:${target.verse}`;
+    const traditions = describeAttribution(extracted.attribution);
+    const disputed = traditions
+      ? `Absent from the earliest manuscripts; carried by ${traditions}.`
+      : "Absent from the earliest manuscripts; carried by later ones.";
+
+    insertVerse.run(
+      target.index,
+      book.id,
+      target.chapter,
+      target.verse,
+      ref,
+      extracted.text,
+      disputed,
+    );
+    insertFts.run(target.index, ref, extracted.text);
+    restored += 1;
+
+    greek.forEach((word, position) => {
+      const lent = word.strongs
+        ? (borrowParsing.get(word.strongs, word.greek) as
+            | { parsing: string | null; parsing_long: string | null }
+            | undefined)
+        : undefined;
+      if (lent) borrowed += 1;
+
+      insertWord.run(
+        target.index,
+        position,
+        position,
+        "Greek",
+        word.greek,
+        word.translit,
+        lent?.parsing ?? word.code,
+        lent?.parsing_long ?? null,
+        word.strongs,
+        word.gloss,
+        word.editions,
+      );
+      wordCount += 1;
+    });
+  }
+  db.exec("COMMIT");
+
+  log(
+    `disputed verses: restored ${restored}/${DISPUTED_VERSES.length} with ${wordCount} words (${borrowed} parsed from existing occurrences)`,
+  );
+  if (missing.length > 0) {
+    throw new Error(`Could not restore ${missing.length} disputed verses: ${missing.join(", ")}`);
+  }
+}
+
 function finalize(db: DatabaseSync) {
   log("computing occurrence counts and book totals …");
   db.exec(`
@@ -879,6 +1024,7 @@ async function main() {
   await importCorpus(db);
   await applyPublishedText(db);
   verifyWordAlignment(db);
+  await restoreDisputedVerses(db);
   finalize(db);
   db.close();
 

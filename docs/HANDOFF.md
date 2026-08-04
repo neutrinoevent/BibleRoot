@@ -3,7 +3,7 @@
 How BibleRoot is built and what tends to catch people out. The README covers
 using the app; this covers working on it.
 
-Current as of `v4`.
+Current as of `v5`.
 
 ## State
 
@@ -15,6 +15,7 @@ Tagged releases on `main` at `neutrinoevent/BibleRoot`:
 | `v2` | Brown-Driver-Briggs and Abbott-Smith rendered in full, external deep links, custom resources file |
 | `v3` | Published text used for reading, multi-verse selection, MIT licence |
 | `v4` | Inflected forms as first-class pages, with a grammatical glossary |
+| `v5` | All 31,102 verses present, with a textual-criticism panel on the disputed sixteen |
 
 Everything in the README works and was exercised in a browser.
 
@@ -24,7 +25,7 @@ Node 25 with built-in `node:sqlite`. There are no native modules.
 Corpus figures, for sanity-checking a rebuild:
 
 ```
-31,086 verses          443,626 aligned words       19,570 concise lexicon entries
+31,102 verses          443,832 aligned words       19,570 concise lexicon entries
 14,090 deep entries    13,848 / 13,876 roots covered by a deep entry
  8,019 deep entries containing in-app verse citations
 99.93% of word chunks align to the published text
@@ -90,11 +91,23 @@ if you edit them.
 
 ## Gotchas
 
-**Sixteen verses have no text.** Matthew 17:21, 18:11, 23:14, Mark 7:16, 9:44,
-9:46, 11:26, 15:28, Luke 17:36, 23:17, John 5:4, Acts 8:37, 15:34, 24:7, 28:29
-and Romans 16:24 are absent from the manuscripts behind the BSB, so
-`31,086 = 31,102 − 16` is correct. `isOmittedVerse` tells these apart from a bad
-reference, and the page explains the gap instead of returning a 404.
+**Sixteen verses come from a second source.** Matthew 17:21, 18:11, 23:14, Mark
+7:16, 9:44, 9:46, 11:26, 15:28, Luke 17:36, 23:17, John 5:4, Acts 8:37, 15:34,
+24:7, 28:29 and Romans 16:24 are absent from the earliest manuscripts, so the
+Berean text carries them only in a footnote and the interlinear tables hold
+nothing at all for them.
+
+`restoreDisputedVerses` fills them: the reading text is lifted from the Berean
+footnote on the *preceding* verse (verse numbers inside footnotes are stored as
+⟨n⟩ for exactly this purpose), and the Greek comes from STEPBible's amalgamated
+NT, where these words are marked `=K` or `=KO` — traditional manuscripts and
+other editions, never `N`. `verses.disputed` names the attesting traditions and
+the verse page shows it.
+
+Parsing for those 206 words is borrowed from the same Greek form where Berean
+already parses it elsewhere (144 of 206 resolve), rather than decoding TAGNT's
+morphology scheme and risking a wrong description of the grammar. The restore
+runs *after* the published-text and alignment checks, so neither sees them.
 
 **`-`, `vvv` and `. . .` in the English column are markers.** `-` means the
 original word is untranslated, such as an article or the direct object marker.

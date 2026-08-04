@@ -16,6 +16,9 @@ export interface AnnotatedWord {
   prefix: string | null;
   suffix: string | null;
   para: string | null;
+  /** Printed editions attesting this word, on verses absent from the earliest
+   *  manuscripts. Null elsewhere. */
+  editions: string | null;
   /** From the joined lexicon entry — null when the word carries no Strong's. */
   lemma: string | null;
   gloss: string | null;

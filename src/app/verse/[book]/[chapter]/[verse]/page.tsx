@@ -62,7 +62,23 @@ function VerseBlock({
         <p className="mb-3 font-mono text-xs text-ink-faint">{verse.ref}</p>
       )}
 
+      {verse.disputed && (
+        <p className="mb-4 rounded-lg border border-rule-strong bg-paper-sunken px-4 py-3 text-sm text-ink-soft">
+          <span className="font-medium text-ink">Disputed text.</span> {verse.disputed} Most modern
+          translations print it in a footnote; the King James and other translations from the
+          Traditional Text carry it in the running text. The Greek below is that of the manuscripts
+          which have it.
+        </p>
+      )}
+
       <ReadingLine words={words} text={verse.text} poetry={poetry} />
+
+      {verse.footnote && (
+        <p className="mt-5 border-t border-rule pt-3 text-sm leading-relaxed text-ink-faint">
+          <span className="uppercase tracking-wide">Footnote</span>{" "}
+          {verse.footnote.replace(/⟨\s*(\d+)\s*⟩/g, " $1 ").replace(/\s+/g, " ").trim()}
+        </p>
+      )}
 
       <details className="mt-6 border-t border-rule pt-3">
         <summary className="cursor-pointer list-none text-xs text-ink-faint hover:text-ink">
