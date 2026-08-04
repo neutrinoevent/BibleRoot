@@ -49,8 +49,44 @@ export function parseInput(raw: string): ParsedInput | null {
   return { kind: "text", query: input };
 }
 
-export function verseHref(book: BookMeta, chapter: number, verse: number): string {
-  return `/verse/${book.slug}/${chapter}/${verse}`;
+export function verseHref(book: BookMeta, chapter: number, verse: number | number[]): string {
+  const list = Array.isArray(verse) ? verse : [verse];
+  return `/verse/${book.slug}/${chapter}/${list.join(",")}`;
+}
+
+/**
+ * The verse segment of a URL may name several verses in the same chapter, so
+ * that a reader can study a scattered selection together: `/verse/john/1/1,7,10`.
+ * Order and duplicates are normalised away.
+ */
+export function parseVerseList(param: string): number[] {
+  const seen = new Set<number>();
+  for (const part of decodeURIComponent(param).split(/[,+]/)) {
+    const trimmed = part.trim();
+    if (!trimmed) continue;
+
+    // A range such as 3-6 expands to each verse in it.
+    const range = /^(\d+)\s*[-–]\s*(\d+)$/.exec(trimmed);
+    if (range) {
+      const from = Number(range[1]);
+      const to = Number(range[2]);
+      if (to >= from && to - from <= 200) {
+        for (let verse = from; verse <= to; verse += 1) seen.add(verse);
+      }
+      continue;
+    }
+
+    const single = Number(trimmed);
+    if (Number.isInteger(single) && single > 0) seen.add(single);
+  }
+  return [...seen].sort((a, b) => a - b);
+}
+
+/** "1,7,10" → "John 1:1, 7, 10" for display and for anchoring notes. */
+export function formatVerseList(book: BookMeta, chapter: number, verses: number[]): string {
+  if (verses.length === 0) return `${book.name} ${chapter}`;
+  if (verses.length === 1) return `${book.name} ${chapter}:${verses[0]}`;
+  return `${book.name} ${chapter}:${verses.join(", ")}`;
 }
 
 export function chapterHref(book: BookMeta, chapter: number): string {

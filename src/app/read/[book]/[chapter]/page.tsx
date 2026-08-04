@@ -2,8 +2,9 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
+import { ChapterVerses } from "@/components/ChapterVerses";
 import { getChapterCount, getChapterVerses } from "@/lib/corpus";
-import { bookFromSlug, chapterHref, verseHref } from "@/lib/refs";
+import { bookFromSlug, chapterHref } from "@/lib/refs";
 
 interface Props {
   params: Promise<{ book: string; chapter: string }>;
@@ -33,28 +34,17 @@ export default async function ChapterPage({ params }: Props) {
         {book.name} {chapter}
       </h1>
 
-      <div className="mt-8 space-y-1">
-        {verses.map((verse) => (
-          <div key={verse.id}>
-            {verse.heading && (
-              <h2 className="mb-2 mt-8 font-serif text-sm uppercase tracking-[0.12em] text-ink-faint">
-                {verse.heading}
-              </h2>
-            )}
-            <Link
-              href={verseHref(book, chapter, verse.verse)}
-              className="group flex gap-3 rounded-lg px-2 py-1.5 transition-colors hover:bg-paper-sunken"
-            >
-              <span className="mt-1.5 w-7 shrink-0 text-right font-mono text-xs text-ink-faint">
-                {verse.verse}
-              </span>
-              <span className="font-serif text-[1.15rem] leading-relaxed text-ink">
-                {verse.text}
-              </span>
-            </Link>
-          </div>
-        ))}
-      </div>
+      <ChapterVerses
+        verses={verses.map((verse) => ({
+          id: verse.id,
+          verse: verse.verse,
+          text: verse.text,
+          heading: verse.heading,
+        }))}
+        bookSlug={book.slug}
+        bookName={book.name}
+        chapter={chapter}
+      />
 
       <nav className="mt-12 flex items-center justify-between border-t border-rule pt-5 text-sm">
         {chapter > 1 ? (

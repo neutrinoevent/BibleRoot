@@ -14,7 +14,8 @@ the terms below travel with it — not the MIT licence.
 
 | Source | Used for | Terms |
 | --- | --- | --- |
-| [Berean Study Bible](https://bereanbible.com) and its interlinear tables | English text; the word-level alignment between English and the original languages; Strong's numbers; morphology | Free to use, per the publisher's stated terms. Please read them before redistributing. |
+| [Berean Standard Bible](https://bereanbible.com) | The verse text | Dedicated to the public domain by the publisher. |
+| [Berean interlinear tables](https://bereanbible.com) | Word-level alignment of English to the original languages; Strong's numbers; morphology | Free to use, per the publisher's stated terms. Please read them before redistributing. |
 | [Strong's Hebrew and Greek dictionaries](https://github.com/openscriptures/strongs), digitised by Open Scriptures | Definitions, derivations, KJV renderings | CC BY-SA. **Share-alike**: derivatives of this data must carry the same licence. |
 | [Tyndale House / STEPBible brief lexicons](https://github.com/STEPBible/STEPBible-Data) | Concise glosses, parts of speech | CC BY 4.0. STEPBible asks that others be referred to github.com/STEPBible as the source rather than redistributing the files. |
 | [Brown-Driver-Briggs](https://github.com/openscriptures/HebrewLexicon), digitised by Open Scriptures | Full Hebrew and Aramaic lexicon entries; TWOT numbers | The 1906 text is public domain. |

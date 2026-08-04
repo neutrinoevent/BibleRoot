@@ -19,7 +19,7 @@ npm run build:data   # one-time, a few minutes
 npm run dev          # http://localhost:3000
 ```
 
-`build:data` downloads the public source data (~75 MB) into `data/sources/` and
+`build:data` downloads the public source data (~79 MB) into `data/sources/` and
 compiles it into `data/bibleroot.db` (~97 MB): 31,086 verses, 443,626 aligned
 words, 19,570 concise lexicon entries and 14,090 full scholarly ones. Both are
 gitignored — rerun on a fresh clone. Rerunning is safe; already downloaded
@@ -42,8 +42,14 @@ On a verse page:
   Aramaic running right to left. Select any word to open its root.
 - **Notes** — anchored to that verse.
 
+In a chapter, **Select verses** turns on checkboxes. Tick any verses, in any
+order, and open them together: `/verse/john/1/1,7,10` shows all three with their
+interlinears, and a note written there is filed under the whole selection.
+Ranges work too (`1,3-5`). It is a URL, so a selection can be bookmarked or
+shared.
+
 On a term page: the concise entry, which books the root clusters in, and every
-occurrence in Scripture shown in its verse — then, for going properly deep:
+occurrence in Scripture shown in its verse. Going deeper:
 
 - **Scholarly lexicons**, in full, offline. Brown-Driver-Briggs for Hebrew and
   Aramaic, Abbott-Smith for Greek, with their sense hierarchies intact. Every
@@ -53,7 +59,7 @@ occurrence in Scripture shown in its verse — then, for going properly deep:
   Concordance, Blue Letter Bible, STEPBible, Logeion (LSJ and the classical
   Greek lexica) and Wiktionary, each addressed to this exact word.
 
-Verse pages carry the same idea under **Study this verse elsewhere**: Bible Hub's
+Verse pages have the same under **Study this verse elsewhere**: Bible Hub's
 interlinear and commentaries, the NET Bible translators' notes, STEPBible, Blue
 Letter Bible, Bible Gateway, and — for the Old Testament — Sefaria with the
 Jewish commentary tradition.
@@ -106,7 +112,8 @@ whatever is on disk.
 
 | Source | Used for | Licence |
 | --- | --- | --- |
-| [Berean Study Bible interlinear tables](https://bereanbible.com) | English text, word-by-word alignment to the original, Strong's numbers, morphology | Free to use |
+| [Berean Standard Bible](https://bereanbible.com) | The verse text you read, taken from the publisher's plain-text edition | Public domain |
+| [Berean interlinear tables](https://bereanbible.com) | Word-by-word alignment of the English to the original, Strong's numbers, morphology | Free to use |
 | [Strong's dictionaries (Open Scriptures)](https://github.com/openscriptures/strongs) | Definitions, derivations, KJV renderings | CC BY-SA |
 | [Tyndale House / STEPBible brief lexicons](https://github.com/STEPBible/STEPBible-Data) | Concise modern glosses, parts of speech | CC BY 4.0 |
 | [Brown-Driver-Briggs (Open Scriptures)](https://github.com/openscriptures/HebrewLexicon) | Full Hebrew/Aramaic lexicon entries, plus TWOT numbers | Public domain (1906) |
@@ -131,7 +138,7 @@ scripts/build-data.ts    streams the source tables into SQLite
 scripts/deep-lexicons.ts BDB + Abbott-Smith XML → safe HTML, citations linked
 src/lib/db.ts            read-only connection (node:sqlite, no native deps)
 src/lib/corpus.ts        verse, word, lexicon and concordance queries
-src/lib/render.ts        word rows → display pieces (shared server/client)
+src/lib/render.ts        word alignment and display helpers (shared server/client)
 src/lib/library.ts       notes, saved terms and custom resources, on disk
 src/lib/resources.ts     external deep-link patterns, per site and per book
 src/lib/refs.ts          reference parsing and routing
@@ -156,7 +163,7 @@ built-in `node:sqlite`, so there is no native module to compile.
 
 ## Licence
 
-Code and documentation: [MIT](LICENSE). Freely given.
+Code and documentation: [MIT](LICENSE).
 
 The biblical text, the lexicons and the word alignment are the work of others
 and keep their own terms — see [`NOTICE.md`](NOTICE.md) before redistributing

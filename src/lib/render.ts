@@ -105,8 +105,8 @@ export interface AlignedSegment {
  * assembled purely from word chunks can differ from the published edition by a
  * character or two. The published text is therefore what gets displayed, and
  * each chunk is located within it by scanning forward — anything between two
- * chunks (punctuation, a quotation mark the tables omitted) is rendered as
- * plain text that simply is not hoverable.
+ * chunks (punctuation, a quotation mark the tables omitted) renders as plain
+ * text without a hover target.
  */
 export function alignWordsToText(words: AnnotatedWord[], text: string): AlignedSegment[] {
   const segments: AlignedSegment[] = [];

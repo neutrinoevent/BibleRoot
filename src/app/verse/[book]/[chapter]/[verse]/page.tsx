@@ -11,9 +11,17 @@ import {
   getNeighbours,
   getVerse,
   isOmittedVerse,
+  type AnnotatedWord,
+  type Verse,
 } from "@/lib/corpus";
 import { notesForRef, readCustomResources } from "@/lib/library";
-import { bookFromSlug, chapterHref, verseHref } from "@/lib/refs";
+import {
+  bookFromSlug,
+  chapterHref,
+  formatVerseList,
+  parseVerseList,
+  verseHref,
+} from "@/lib/refs";
 import { applyCustomVerseResources, verseResources } from "@/lib/resources";
 
 interface Props {
@@ -27,23 +35,64 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { book: slug, chapter, verse } = await params;
   const book = bookFromSlug(slug);
   if (!book) return { title: "BibleRoot" };
-  return { title: `${book.name} ${chapter}:${verse} — BibleRoot` };
+  const verses = parseVerseList(verse);
+  return { title: `${formatVerseList(book, Number(chapter), verses)} — BibleRoot` };
+}
+
+/** One verse: heading, reading line, interlinear. Reused across a selection. */
+function VerseBlock({
+  verse,
+  words,
+  showRef,
+}: {
+  verse: Verse;
+  words: AnnotatedWord[];
+  showRef: boolean;
+}) {
+  const poetry = words.some((word) => word.para?.startsWith("indent"));
+
+  return (
+    <section className="mt-6 rounded-xl border border-rule bg-paper-raised p-6 sm:p-8">
+      {verse.heading && (
+        <p className="mb-3 font-serif text-sm uppercase tracking-[0.12em] text-ink-faint">
+          {verse.heading}
+        </p>
+      )}
+      {showRef && (
+        <p className="mb-3 font-mono text-xs text-ink-faint">{verse.ref}</p>
+      )}
+
+      <ReadingLine words={words} text={verse.text} poetry={poetry} />
+
+      <details className="mt-6 border-t border-rule pt-3">
+        <summary className="cursor-pointer list-none text-xs text-ink-faint hover:text-ink">
+          Interlinear ›
+        </summary>
+        <div className="mt-3">
+          <InterlinearGrid words={words} />
+        </div>
+      </details>
+    </section>
+  );
 }
 
 export default async function VersePage({ params }: Props) {
   const { book: slug, chapter: chapterParam, verse: verseParam } = await params;
   const book = bookFromSlug(slug);
   const chapter = Number(chapterParam);
-  const verseNumber = Number(verseParam);
+  const requested = parseVerseList(verseParam);
 
-  if (!book || !Number.isInteger(chapter) || !Number.isInteger(verseNumber)) notFound();
+  if (!book || !Number.isInteger(chapter) || requested.length === 0) notFound();
 
-  const verse = getVerse(book.id, chapter, verseNumber);
+  const found = requested
+    .map((number) => ({ number, verse: getVerse(book.id, chapter, number) }))
+    .filter((entry): entry is { number: number; verse: Verse } => entry.verse !== null);
 
-  if (!verse) {
+  if (found.length === 0) {
+    const single = requested[0];
     // The sixteen verses absent from the critical text still have canonical
     // numbers, so explain rather than 404.
-    if (isOmittedVerse(book.id, chapter, verseNumber)) {
+    if (requested.length === 1 && isOmittedVerse(book.id, chapter, single)) {
       return (
         <div className="mx-auto max-w-3xl px-5 py-16">
           <p className="text-sm text-ink-faint">
@@ -52,7 +101,7 @@ export default async function VersePage({ params }: Props) {
             </Link>
           </p>
           <h1 className="mt-2 font-serif text-3xl">
-            {book.name} {chapter}:{verseNumber}
+            {book.name} {chapter}:{single}
           </h1>
           <p className="mt-4 max-w-prose text-ink-soft">
             This verse number is not present in the manuscripts underlying the Berean Study Bible.
@@ -71,16 +120,30 @@ export default async function VersePage({ params }: Props) {
     notFound();
   }
 
-  const words = getAnnotatedWords(verse.id);
-  const { prev, next } = getNeighbours(verse.id);
-  const [notes, custom] = await Promise.all([notesForRef(verse.ref), readCustomResources()]);
-  const verseContext = { book, chapter, verse: verseNumber, ref: verse.ref };
+  const multiple = found.length > 1;
+  const numbers = found.map((entry) => entry.number);
+  const label = formatVerseList(book, chapter, numbers);
+  const noteRef = label;
+  const missing = requested.filter((number) => !numbers.includes(number));
+
+  const [notes, custom] = await Promise.all([notesForRef(noteRef), readCustomResources()]);
+
+  // Resource links address a single verse, so a selection uses its first.
+  const verseContext = {
+    book,
+    chapter,
+    verse: numbers[0],
+    ref: found[0].verse.ref,
+  };
   const links = [
     ...verseResources(verseContext),
     ...applyCustomVerseResources(custom.verse, verseContext),
   ];
-  const poetry = words.some((word) => word.para?.startsWith("indent"));
-  const language = words.find((word) => word.language)?.language ?? null;
+
+  const { prev, next } = getNeighbours(found[0].verse.id);
+  const language = found
+    .flatMap((entry) => getAnnotatedWords(entry.verse.id))
+    .find((word) => word.language)?.language;
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-12">
@@ -93,70 +156,73 @@ export default async function VersePage({ params }: Props) {
         </span>
       </nav>
 
-      {verse.heading && (
-        <p className="mt-6 font-serif text-sm uppercase tracking-[0.12em] text-ink-faint">
-          {verse.heading}
+      <h1 className="mt-4 font-serif text-2xl tracking-tight">{label}</h1>
+      {multiple && (
+        <p className="mt-1 text-sm text-ink-faint">
+          {found.length} verses, studied together. Notes here are filed under the whole selection.
+        </p>
+      )}
+      {missing.length > 0 && (
+        <p className="mt-2 text-sm text-ink-faint">
+          Verse{missing.length === 1 ? "" : "s"} {missing.join(", ")} could not be shown; absent
+          from this text.
         </p>
       )}
 
-      <h1 className="mt-2 font-serif text-2xl tracking-tight">{verse.ref}</h1>
+      {found.map((entry) => (
+        <VerseBlock
+          key={entry.verse.id}
+          verse={entry.verse}
+          words={getAnnotatedWords(entry.verse.id)}
+          showRef={multiple}
+        />
+      ))}
 
-      <section className="mt-6 rounded-xl border border-rule bg-paper-raised p-6 sm:p-8">
-        <ReadingLine words={words} text={verse.text} poetry={poetry} />
-        <p className="mt-6 border-t border-rule pt-3 text-xs text-ink-faint">
-          Hover any word for the original behind it · click to keep it open · Berean Study Bible
-        </p>
-      </section>
+      <p className="mt-3 text-xs text-ink-faint">
+        Hover any word for the original behind it · click to keep it open · Berean Study Bible
+      </p>
 
-      <section className="mt-10">
-        <h2 className="font-serif text-lg">Interlinear</h2>
-        <p className="mt-1 text-sm text-ink-faint">
-          In the order of the original text. Select a word to open its root.
-        </p>
-        <div className="mt-3 rounded-xl border border-rule bg-paper-raised p-4">
-          <InterlinearGrid words={words} />
-        </div>
-      </section>
-
-      {verse.crossref && (
+      {!multiple && found[0].verse.crossref && (
         <section className="mt-8">
           <h2 className="font-serif text-lg">Cross references</h2>
-          <p className="mt-1 text-sm text-ink-soft">{verse.crossref}</p>
+          <p className="mt-1 text-sm text-ink-soft">{found[0].verse.crossref}</p>
         </section>
       )}
 
       <ResourceLinks
         links={links}
-        heading="Study this verse elsewhere"
+        heading={multiple ? `Study ${found[0].verse.ref} elsewhere` : "Study this verse elsewhere"}
         blurb="Commentaries, translators' notes and parallel versions, opened in a new tab."
       />
 
       <section className="mt-10">
-        <NotesPanel verseRef={verse.ref} notes={notes} />
+        <NotesPanel verseRef={noteRef} notes={notes} />
       </section>
 
-      <nav className="mt-12 flex items-center justify-between border-t border-rule pt-5 text-sm">
-        {prev ? (
-          <Link
-            href={verseHref(prev.book, prev.chapter, prev.verse)}
-            className="text-ink-soft hover:text-ink"
-          >
-            ← {prev.ref}
-          </Link>
-        ) : (
-          <span />
-        )}
-        {next ? (
-          <Link
-            href={verseHref(next.book, next.chapter, next.verse)}
-            className="text-ink-soft hover:text-ink"
-          >
-            {next.ref} →
-          </Link>
-        ) : (
-          <span />
-        )}
-      </nav>
+      {!multiple && (
+        <nav className="mt-12 flex items-center justify-between border-t border-rule pt-5 text-sm">
+          {prev ? (
+            <Link
+              href={verseHref(prev.book, prev.chapter, prev.verse)}
+              className="text-ink-soft hover:text-ink"
+            >
+              ← {prev.ref}
+            </Link>
+          ) : (
+            <span />
+          )}
+          {next ? (
+            <Link
+              href={verseHref(next.book, next.chapter, next.verse)}
+              className="text-ink-soft hover:text-ink"
+            >
+              {next.ref} →
+            </Link>
+          ) : (
+            <span />
+          )}
+        </nav>
+      )}
     </div>
   );
 }
