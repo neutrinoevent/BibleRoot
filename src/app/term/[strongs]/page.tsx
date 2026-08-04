@@ -16,7 +16,7 @@ import {
 } from "@/lib/corpus";
 import { getTerm, notesForStrongs, readCustomResources } from "@/lib/library";
 import { hrefForBookId } from "@/lib/refs";
-import { describeMorph } from "@/lib/render";
+import { describeMorph, isEnglishPlaceholder } from "@/lib/render";
 import { applyCustomTermResources, termResources } from "@/lib/resources";
 
 interface Props {
@@ -222,12 +222,11 @@ export default async function TermPage({ params, searchParams }: Props) {
                 <p className="mt-1 font-serif text-[15px] leading-snug text-ink-soft">
                   {occurrence.text}
                 </p>
-                {occurrence.english?.trim() &&
-                  !["-", "vvv"].includes(occurrence.english.trim()) && (
-                    <p className="mt-1 text-xs text-ink-faint">
-                      here rendered “{occurrence.english.trim()}”
-                    </p>
-                  )}
+                {!isEnglishPlaceholder(occurrence.english) && (
+                  <p className="mt-1 text-xs text-ink-faint">
+                    here rendered “{occurrence.english!.trim()}”
+                  </p>
+                )}
               </Link>
             </li>
           ))}

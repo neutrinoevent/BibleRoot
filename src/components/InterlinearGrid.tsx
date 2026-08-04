@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { describeParsing, scriptOfLanguage, type AnnotatedWord } from "@/lib/render";
+import { describeParsing, hasEnglish, scriptOfLanguage, type AnnotatedWord } from "@/lib/render";
 
 interface Props {
   words: AnnotatedWord[];
@@ -36,9 +36,8 @@ export function InterlinearGrid({ words }: Props) {
                 {word.translit ?? ""}
               </span>
               <span className="text-sm text-ink" dir="ltr">
-                {word.english?.trim() && !["-", "vvv"].includes(word.english.trim())
-                  ? word.english.trim()
-                  : word.gloss?.split(";")[0] ?? "—"}
+                {/* Words whose English is carried elsewhere fall back to their gloss. */}
+                {hasEnglish(word) ? word.english!.trim() : word.gloss?.split(";")[0] ?? "—"}
               </span>
               <span className="font-mono text-[10px] text-ink-faint" dir="ltr">
                 {word.strongs ?? ""}

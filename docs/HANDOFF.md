@@ -90,11 +90,22 @@ Romans 16:24 — absent from the manuscripts behind the BSB. `31,086 = 31,102 �
 is correct, not a bug. `isOmittedVerse` distinguishes these from a bad reference
 so the page explains itself instead of 404ing.
 
-**`-` and `vvv` in the English column are placeholders**, not text. `-` means the
-original word is untranslated (articles, the direct object marker); `vvv` means
-its English is carried by a neighbouring chunk. Both words still appear in the
-interlinear — they just contribute no English. `buildDisplayPieces` folds their
-punctuation onto the neighbouring chunk so nothing is dropped from the sentence.
+**`-`, `vvv` and `. . .` in the English column are placeholders**, not text. `-`
+means the original word is untranslated (articles, the direct object marker);
+`vvv` and `. . .` mean its English is carried by a neighbouring chunk. All three
+words still appear in the interlinear — they just contribute no English.
+`buildDisplayPieces` folds their punctuation onto the neighbouring chunk so
+nothing is dropped from the sentence.
+
+The dotted marker is **spaced** — `. . .`, not `...` — which is how it survived
+the first pass of this filter and put stray ellipses into 12,543 verses before
+being caught. `isEnglishPlaceholder` and `stripPlaceholderMarks` in
+`src/lib/render.ts` are now the single definition, imported by the importer as
+well as the UI; do not reintroduce a local copy of the list. Note that genuine
+ellipses do exist in the text (Genesis 3:22, Exodus 32:32, Mark 11:32 and three
+others are deliberately unfinished sentences) — those arrive on the *punctuation*
+column, never the English one, which is why stripping only the English column is
+safe.
 
 **Punctuation and quote marks live on separate columns** from the English, and
 opening marks arrive with trailing spaces. The spacing rules are applied in two

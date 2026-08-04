@@ -34,12 +34,32 @@ export function scriptOfLanguage(language: string | null | undefined): ScriptLan
   return language === "Greek" || language === "greek" ? "greek" : "hebrew";
 }
 
-/** Placeholders the source uses for words that carry no English of their own. */
-const PLACEHOLDER = new Set(["-", "vvv", "", "..."]);
+/**
+ * Markers the source uses for words that carry no English of their own:
+ * `-` for an untranslated word, `vvv` and `. . .` where the English is supplied
+ * by a neighbouring chunk. The dotted form is spaced, and the English column
+ * contains no genuine ellipses, so a run of two or more dots is always a marker.
+ */
+const PLACEHOLDER_MARKS = /^(?:-|vvv|\.(?:\s*\.)+|[\s·•]+)$/i;
+
+export function isEnglishPlaceholder(value: string | null | undefined): boolean {
+  const text = value?.trim() ?? "";
+  return text.length === 0 || PLACEHOLDER_MARKS.test(text);
+}
+
+/** Removes embedded markers, returning null when nothing meaningful is left. */
+export function stripPlaceholderMarks(value: string | null | undefined): string | null {
+  if (value === null || value === undefined) return null;
+  const cleaned = value
+    .replace(/\.(?:\s*\.)+/g, " ")
+    .replace(/\bvvv\b/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+  return cleaned && cleaned !== "-" ? cleaned : null;
+}
 
 export function hasEnglish(word: AnnotatedWord): boolean {
-  const english = word.english?.trim() ?? "";
-  return english.length > 0 && !PLACEHOLDER.has(english);
+  return !isEnglishPlaceholder(word.english);
 }
 
 export interface DisplayPiece {
@@ -86,7 +106,7 @@ export function buildDisplayPieces(words: AnnotatedWord[]): DisplayPiece[] {
 
   words.forEach((word, index) => {
     const english = word.english?.trim() ?? "";
-    const visible = english.length > 0 && !PLACEHOLDER.has(english);
+    const visible = !isEnglishPlaceholder(english);
     const prefix = word.prefix ?? "";
     const suffix = word.suffix ?? "";
 

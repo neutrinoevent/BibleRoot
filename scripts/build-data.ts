@@ -21,6 +21,7 @@ import { fileURLToPath } from "node:url";
 import ExcelJS from "exceljs";
 
 import { BOOKS, BOOKS_BY_NAME } from "../src/lib/books.ts";
+import { isEnglishPlaceholder, stripPlaceholderMarks } from "../src/lib/render.ts";
 import { buildDeepLexicons, type DeepEntry } from "./deep-lexicons.ts";
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
@@ -95,9 +96,6 @@ const COL = {
 } as const;
 
 const SHEET_NAME = "biblosinterlinear96";
-
-/** Placeholders the Berean tables use for words with no English of their own. */
-const NO_ENGLISH = new Set(["-", "vvv", "...", "•"]);
 
 function log(message: string) {
   console.log(`[build-data] ${message}`);
@@ -277,14 +275,12 @@ function cleanText(value: string | null): string | null {
 }
 
 /**
- * `vvv` marks a source word whose English is carried by a neighbouring chunk.
- * It is usually the whole cell, but occasionally sits alongside real text.
+ * `vvv` and `. . .` both mark a source word whose English is carried by a
+ * neighbouring chunk. They are usually the whole cell, but occasionally sit
+ * alongside real text, so the markers are stripped rather than the cell dropped.
  */
 function cleanEnglish(value: string | null): string | null {
-  const cleaned = cleanText(value);
-  if (cleaned === null) return null;
-  const withoutMarkers = cleaned.replace(/\bvvv\b/g, " ").replace(/\s+/g, " ").trim();
-  return withoutMarkers || null;
+  return stripPlaceholderMarks(cleanText(value));
 }
 
 /** `<p class=|indent2|>` → `indent2`, used to rebuild poetry line breaks. */
@@ -511,7 +507,7 @@ function buildVerseText(words: RawWord[]): string {
 
   for (const word of words) {
     const english = word.english?.trim() ?? "";
-    const visible = english.length > 0 && !NO_ENGLISH.has(english);
+    const visible = !isEnglishPlaceholder(english);
     const prefix = word.prefix ?? "";
     const suffix = word.suffix ?? "";
 
