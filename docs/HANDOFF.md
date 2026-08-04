@@ -168,6 +168,17 @@ it directly caused a `disk I/O error` when a dev server reopened it mid-build.
 `getDb` stats the file and reopens when it changes, which is why there is a
 `stamp()` call on the hot path.
 
+**The hover card needs a bridge to be reachable.** Only ten pixels separate a
+word from its card, and the next line of the verse sits under that gap, so a
+pointer travelling down to "Go deeper" would cross another word and swap the
+card out. `WordPopover` renders an invisible strip spanning the gap, as wide as
+the word and card together so a diagonal path stays covered. Removing it makes
+the card's links unreachable by mouse.
+
+Placement is also clamped into the viewport. When a card fits neither below the
+word nor above it — a short window, a long entry — it used to run off the
+bottom of the screen and take its links with it.
+
 **Turbopack sometimes breaks on `node:` builtins during HMR.** Editing `db.ts`
 can produce `Failed to load external module node:sqlite: require is not
 defined`. Restart `npm run dev`; production builds are unaffected.

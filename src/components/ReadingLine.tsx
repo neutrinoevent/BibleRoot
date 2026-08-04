@@ -165,14 +165,14 @@ export function ReadingLine({ words, text, poetry = false }: Props) {
       </p>
 
       {active && (
-        <div onPointerEnter={cancelClose} onPointerLeave={scheduleClose}>
-          <WordPopover
-            word={words[active.index]}
-            anchor={active.anchor}
-            pinned={active.pinned}
-            onClose={() => setActive(null)}
-          />
-        </div>
+        <WordPopover
+          word={words[active.index]}
+          anchor={active.anchor}
+          pinned={active.pinned}
+          onClose={() => setActive(null)}
+          onStay={cancelClose}
+          onLeave={scheduleClose}
+        />
       )}
     </>
   );
