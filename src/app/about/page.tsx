@@ -90,6 +90,56 @@ export default function AboutPage() {
         <code>data/library/notes/</code>, one markdown file each with a small frontmatter header.
         They are yours to grep, edit, sync or put under version control.
       </p>
+
+      <h2 className="mt-10 font-serif text-xl">Who made this</h2>
+      <p className="mt-3 leading-relaxed text-ink-soft">
+        BibleRoot was built by Alex Nichols. If you have a question, spot something wrong in the
+        text or the lexicons, or want to suggest a feature, the best place is the repository:
+      </p>
+      <ul className="mt-3 space-y-1.5 text-sm">
+        <li>
+          <a
+            href="https://github.com/neutrinoevent/BibleRoot"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent hover:underline"
+          >
+            github.com/neutrinoevent/BibleRoot
+          </a>
+          <span className="ml-2 text-ink-faint">— the source, and how to build it yourself</span>
+        </li>
+        <li>
+          <a
+            href="https://github.com/neutrinoevent/BibleRoot/issues"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-accent hover:underline"
+          >
+            Open an issue
+          </a>
+          <span className="ml-2 text-ink-faint">— questions, corrections and suggestions</span>
+        </li>
+      </ul>
+      <p className="mt-3 leading-relaxed text-ink-soft">
+        Corrections to the biblical text or the lexicon entries are worth passing upstream too, to
+        whichever source they came from. The projects listed above maintain that data, and a fix
+        there reaches everyone using it.
+      </p>
+
+      <h2 className="mt-10 font-serif text-xl">Licence</h2>
+      <p className="mt-3 leading-relaxed text-ink-soft">
+        The code is released under the <strong>MIT licence</strong>. You are free to use it, change
+        it, share it, build on it, and put it to work in something of your own, commercial or not.
+        The only condition is that the copyright notice travels with it. Freely received, freely
+        given.
+      </p>
+      <p className="mt-3 leading-relaxed text-ink-soft">
+        That covers the application. The biblical text, the word alignment and the lexicons are the
+        work of others and keep their own terms — the Berean Standard Bible is in the public domain,
+        Strong&apos;s dictionaries are CC BY-SA, and the Tyndale lexicons are CC BY 4.0. If you
+        redistribute anything built from that data, honour those licences; the{" "}
+        <code>NOTICE.md</code> file in the repository sets out which applies to what.
+      </p>
     </div>
   );
 }
