@@ -17,7 +17,7 @@ import {
   getStrongs,
 } from "@/lib/corpus";
 import { getTerm, notesForStrongs, readCustomResources } from "@/lib/library";
-import { hrefForBookId } from "@/lib/refs";
+import { hrefForBookId, wordHref } from "@/lib/refs";
 import { describeMorph, isEnglishPlaceholder } from "@/lib/render";
 import { applyCustomTermResources, termResources } from "@/lib/resources";
 
@@ -191,7 +191,8 @@ export default async function TermPage({ params, searchParams }: Props) {
             </span>
           </h2>
           <p className="mt-1 text-sm text-ink-faint">
-            The same word, inflected. All of these are filed under{" "}
+            The same word, inflected. Open any of them for its own grammar and
+            occurrences; all are filed under{" "}
             <span className={scriptClass} dir={isGreek ? "ltr" : "rtl"}>
               {entry.lemma}
             </span>
@@ -202,23 +203,25 @@ export default async function TermPage({ params, searchParams }: Props) {
               const isArrival =
                 arrivedFrom?.original.toLowerCase() === item.original.toLowerCase();
               return (
-                <li
-                  key={item.original}
-                  title={item.parsing_long ?? item.parsing ?? undefined}
-                  className={`rounded-lg border px-3 py-2 text-center ${
-                    isArrival ? "border-accent bg-highlight" : "border-rule bg-paper-raised"
-                  }`}
-                >
-                  <span
-                    className={`${scriptClass} block text-lg`}
-                    dir={isGreek ? "ltr" : "rtl"}
-                    lang={isGreek ? "el" : "he"}
+                <li key={item.original}>
+                  <Link
+                    href={wordHref(entry.id, item.original)}
+                    title={item.parsing_long ?? item.parsing ?? undefined}
+                    className={`block rounded-lg border px-3 py-2 text-center transition-colors hover:border-rule-strong ${
+                      isArrival ? "border-accent bg-highlight" : "border-rule bg-paper-raised"
+                    }`}
                   >
-                    {item.original}
-                  </span>
-                  <span className="block font-mono text-[10px] text-ink-faint">
-                    {item.parsing ?? ""} · {item.c.toLocaleString()}
-                  </span>
+                    <span
+                      className={`${scriptClass} block text-lg`}
+                      dir={isGreek ? "ltr" : "rtl"}
+                      lang={isGreek ? "el" : "he"}
+                    >
+                      {item.original}
+                    </span>
+                    <span className="block font-mono text-[10px] text-ink-faint">
+                      {item.parsing ?? ""} · {item.c.toLocaleString()}
+                    </span>
+                  </Link>
                 </li>
               );
             })}

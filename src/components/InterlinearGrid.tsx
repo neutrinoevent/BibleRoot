@@ -1,5 +1,6 @@
 import Link from "next/link";
 
+import { wordHref } from "@/lib/refs";
 import { describeParsing, hasEnglish, scriptOfLanguage, type AnnotatedWord } from "@/lib/render";
 
 interface Props {
@@ -51,7 +52,7 @@ export function InterlinearGrid({ words }: Props) {
           return word.strongs ? (
             <Link
               key={word.pos}
-              href={`/term/${word.strongs}`}
+              href={wordHref(word.strongs, word.original)}
               title={parsing ?? undefined}
               className={`${shared} hover:bg-paper-sunken`}
             >

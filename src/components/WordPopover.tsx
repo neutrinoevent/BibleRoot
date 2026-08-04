@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useLayoutEffect, useRef, useState } from "react";
 
+import { wordHref } from "@/lib/refs";
 import { describeParsing, scriptOf, type AnnotatedWord } from "@/lib/render";
 
 interface Props {
@@ -120,9 +121,7 @@ export function WordPopover({ word, anchor, pinned, onClose }: Props) {
           <Link
             // Carrying the surface form lets the term page open by explaining
             // how this form relates to the headword.
-            href={`/term/${word.strongs}${
-              word.original ? `?form=${encodeURIComponent(word.original)}` : ""
-            }`}
+            href={wordHref(word.strongs, word.original)}
             className="text-sm font-medium text-accent hover:underline"
           >
             Go deeper →

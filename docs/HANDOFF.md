@@ -3,7 +3,7 @@
 How BibleRoot is built and what tends to catch people out. The README covers
 using the app; this covers working on it.
 
-Current as of `v3`.
+Current as of `v4`.
 
 ## State
 
@@ -14,6 +14,7 @@ Tagged releases on `main` at `neutrinoevent/BibleRoot`:
 | `v1` | Interlinear reader, hover lookup, term pages with concordance, notes and saved terms on disk |
 | `v2` | Brown-Driver-Briggs and Abbott-Smith rendered in full, external deep links, custom resources file |
 | `v3` | Published text used for reading, multi-verse selection, MIT licence |
+| `v4` | Inflected forms as first-class pages, with a grammatical glossary |
 
 Everything in the README works and was exercised in a browser.
 
@@ -108,17 +109,31 @@ ellipses do exist: Genesis 3:22, Exodus 32:32, Matthew 9:6, Mark 2:10, Mark
 11:32 and Ephesians 3:1 trail off deliberately. Those arrive on the punctuation
 column, which is why stripping only the English column is safe.
 
-**A term page is about the dictionary form, never the form in the verse.** Every
-word in the text is inflected, and the lexicon files them all under one
-headword: ἡμῶν, μου and με are all ἐγώ (G1473, 18 distinct forms); קַוֵּה is
-קָוָה (H6960, 45 forms). This reads as a broken link if the page does not say
-so, so the hover card names the dictionary form under "Listed as", "Go deeper"
-carries `?form=` with the surface form, and the term page opens by explaining
-the relationship and lists every form in the text.
+**Words link to the form, and the form links to the root.** Every word in the
+text is inflected, while lexicons file entries under one headword: ἡμῶν, μου and
+με are all ἐγώ (G1473, 18 forms); קַוֵּה is קָוָה (H6960, 45 forms). Sending a
+reader straight to the headword reads as a broken link, so the primary
+destination is the form.
+
+- `/term/[strongs]/[form]` is the inflected form: its grammar explained, its own
+  occurrences, its own English renderings, sibling forms, and a card linking up
+  to the root. Hover cards, the interlinear and the forms list all point here.
+- `/term/[strongs]` is the root: lexicon entries, the full concordance, book
+  distribution, every form. Arriving with `?form=` makes it explain the relation.
+
+Lexicon content is lemma-level by nature, so a form page links to it rather than
+duplicating it. Saved terms and notes are also filed against the root, so they
+aggregate across forms; the heading names which root.
 
 Forms are merged case-insensitively in `getInflectedForms`, because a word
 starting a sentence is capitalised and SQLite's `lower()` is ASCII-only, so
 Ἐγὼ and ἐγὼ would otherwise appear as two forms.
+
+`src/lib/morphology.ts` holds the grammatical glossary — what a Piel does, what
+the genitive conveys. Terms are matched against the expanded parsing longest
+first, with each matched span blanked out, so "Imperfect" is never also read as
+"Perfect" and "Middle or Passive" is not split in two. Add terms there rather
+than in a page.
 
 **`[His]` and `{will}` are markup.** Both bracket forms mark words the
 translators supplied for English sense. The published text prints them plainly,

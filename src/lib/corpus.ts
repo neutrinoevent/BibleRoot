@@ -2,7 +2,7 @@ import "server-only";
 
 import { BOOKS_BY_ID, type BookMeta } from "./books";
 import { queryAll, queryOne } from "./db";
-import type { AnnotatedWord } from "./render";
+import { isEnglishPlaceholder, stripSuppliedMarkers, type AnnotatedWord } from "./render";
 
 export type { AnnotatedWord };
 
@@ -183,13 +183,80 @@ export function getInflectedForms(strongsId: string): InflectedForm[] {
   return [...merged.values()].sort((a, b) => b.c - a.c);
 }
 
-/** The parsing recorded for a particular surface form, for the arrival note. */
-export function describeForm(strongsId: string, original: string): InflectedForm | null {
-  return queryOne<InflectedForm>(
-    `SELECT original, parsing, parsing_long, COUNT(*) AS c
-       FROM words
-      WHERE strongs = ? AND original = ?`,
-    [strongsId, original],
+/**
+ * A single inflected form. Matched case-insensitively, because a word opening a
+ * sentence is capitalised and SQLite's lower() does not fold Greek or Hebrew —
+ * so the fold happens here, over the small set of forms for one root.
+ */
+export function getForm(strongsId: string, original: string): InflectedForm | null {
+  const target = original.toLowerCase();
+  return getInflectedForms(strongsId).find((form) => form.original.toLowerCase() === target) ?? null;
+}
+
+/** Kept for the arrival note on the lemma page. */
+export const describeForm = getForm;
+
+/** Occurrences of one inflected form, rather than of the whole root. */
+export function getFormOccurrences(
+  strongsId: string,
+  original: string,
+  limit: number,
+): Occurrence[] {
+  return queryAll<Occurrence>(
+    `SELECT v.ref, v.book_id, v.chapter, v.verse, v.text,
+            w.english, w.original, w.translit, w.parsing
+       FROM words w
+       JOIN verses v ON v.id = w.verse_id
+      WHERE w.strongs = ? AND w.original = ? COLLATE NOCASE
+      ORDER BY v.id, w.pos
+      LIMIT ?`,
+    [strongsId, original, limit],
+  );
+}
+
+export interface Rendering {
+  english: string;
+  c: number;
+}
+
+/**
+ * How the translators rendered this form, and how often. Seeing one Hebrew word
+ * carried into English a dozen different ways is often the point of the study.
+ */
+export function getRenderings(
+  strongsId: string,
+  original?: string,
+  limit = 30,
+): Rendering[] {
+  const rows = original
+    ? queryAll<Rendering>(
+        `SELECT english, COUNT(*) AS c
+           FROM words
+          WHERE strongs = ? AND original = ? COLLATE NOCASE AND english IS NOT NULL
+          GROUP BY english ORDER BY c DESC LIMIT ?`,
+        [strongsId, original, limit * 3],
+      )
+    : queryAll<Rendering>(
+        `SELECT english, COUNT(*) AS c
+           FROM words
+          WHERE strongs = ? AND english IS NOT NULL
+          GROUP BY english ORDER BY c DESC LIMIT ?`,
+        [strongsId, limit * 3],
+      );
+
+  return rows
+    .filter((row) => !isEnglishPlaceholder(row.english))
+    .map((row) => ({ english: stripSuppliedMarkers(row.english).trim(), c: row.c }))
+    .filter((row) => row.english.length > 0)
+    .slice(0, limit);
+}
+
+export function countFormOccurrences(strongsId: string, original: string): number {
+  return (
+    queryOne<{ c: number }>(
+      "SELECT COUNT(*) AS c FROM words WHERE strongs = ? AND original = ? COLLATE NOCASE",
+      [strongsId, original],
+    )?.c ?? 0
   );
 }
 

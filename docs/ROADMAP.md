@@ -11,14 +11,6 @@ answered for each one.
 
 Query-and-render work. No new import, no new source.
 
-### How this word actually gets translated
-
-Group a root's occurrences by their English rendering and show the spread.
-H7451 is rendered 254 distinct ways in the BSB: "this evil", "harm", "trouble",
-"disaster", "wicked". That distribution is often the most illuminating thing
-about a word, and it is one `GROUP BY` over `words.english`. It would sit well
-beside the existing per-book distribution bars on the term page.
-
 ### Tag browsing
 
 Note and term frontmatter already carries `tags`, and `library.ts` already

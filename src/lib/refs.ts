@@ -106,6 +106,14 @@ export function termHref(strongs: string): string {
   return `/term/${strongs}`;
 }
 
+/**
+ * Words in the text link to the form actually standing there, which carries its
+ * own grammar, occurrences and renderings, and leads up to the root from there.
+ */
+export function wordHref(strongs: string, original?: string | null): string {
+  return original ? `/term/${strongs}/${encodeURIComponent(original)}` : `/term/${strongs}`;
+}
+
 export function formatRef(book: BookMeta, chapter: number, verse?: number): string {
   return verse === undefined ? `${book.name} ${chapter}` : `${book.name} ${chapter}:${verse}`;
 }

@@ -48,8 +48,13 @@ interlinears, and a note written there is filed under the whole selection.
 Ranges work too (`1,3-5`). It is a URL, so a selection can be bookmarked or
 shared.
 
-On a term page: the concise entry, which books the root clusters in, and every
-occurrence in Scripture shown in its verse. Going deeper:
+Clicking a word opens **the form standing in the text**, not the dictionary
+entry. קַוֵּה gets its own page: what a Piel imperative is doing, the two places
+in all of Scripture where that exact form appears, and how each was rendered.
+The root is one click away from there.
+
+On the root page: the concise entry, which books it clusters in, every inflected
+form, and every occurrence shown in its verse. Going deeper:
 
 - **Scholarly lexicons**, in full, offline. Brown-Driver-Briggs for Hebrew and
   Aramaic, Abbott-Smith for Greek, with their sense hierarchies intact. Every
