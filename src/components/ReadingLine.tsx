@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 
 import { alignWordsToText, type AnnotatedWord } from "@/lib/render";
+import { useTermHighlight } from "./TermHighlight";
 import { WordPopover } from "./WordPopover";
 
 interface Props {
@@ -38,6 +39,7 @@ function startsLine(para: string | null): boolean {
 
 export function ReadingLine({ words, text, poetry = false }: Props) {
   const segments = alignWordsToText(words, text);
+  const { active: highlighted } = useTermHighlight();
   const [active, setActive] = useState<Active | null>(null);
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -115,6 +117,8 @@ export function ReadingLine({ words, text, poetry = false }: Props) {
           const word = words[segment.wordIndex];
           const isActive = active?.index === segment.wordIndex;
           const hasRoot = Boolean(word.strongs);
+          // Set while a shared root is being traced across a selection.
+          const isTraced = Boolean(highlighted) && word.strongs === highlighted;
           const lineBreak = poetry && order > 0 && startsLine(word.para);
           const indent = indentFor(word.para);
 
@@ -144,11 +148,13 @@ export function ReadingLine({ words, text, poetry = false }: Props) {
                 className={`cursor-pointer rounded-[3px] px-[1px] transition-colors duration-100 ${
                   segment.supplied ? "text-ink-soft" : ""
                 } ${
-                  isActive
-                    ? "bg-highlight"
-                    : hasRoot
-                      ? "decoration-rule-strong decoration-dotted underline-offset-[6px] hover:bg-highlight hover:underline"
-                      : "hover:bg-paper-sunken"
+                  isTraced
+                    ? "bg-accent/25 font-medium underline decoration-accent decoration-2 underline-offset-[5px]"
+                    : isActive
+                      ? "bg-highlight"
+                      : hasRoot
+                        ? "decoration-rule-strong decoration-dotted underline-offset-[6px] hover:bg-highlight hover:underline"
+                        : "hover:bg-paper-sunken"
                 }`}
               >
                 {segment.text}

@@ -4,10 +4,11 @@ import type { Metadata } from "next";
 
 import { ChapterVerses } from "@/components/ChapterVerses";
 import { getChapterCount, getChapterVerses } from "@/lib/corpus";
-import { bookFromSlug, chapterHref } from "@/lib/refs";
+import { bookFromSlug, chapterHref, parseVerseList } from "@/lib/refs";
 
 interface Props {
   params: Promise<{ book: string; chapter: string }>;
+  searchParams: Promise<{ select?: string }>;
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -17,8 +18,9 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 /** Chapter view: the reading context around a verse. Each verse links inward. */
-export default async function ChapterPage({ params }: Props) {
+export default async function ChapterPage({ params, searchParams }: Props) {
   const { book: slug, chapter: chapterParam } = await params;
+  const { select } = await searchParams;
   const book = bookFromSlug(slug);
   const chapter = Number(chapterParam);
   if (!book || !Number.isInteger(chapter) || chapter < 1) notFound();
@@ -44,6 +46,7 @@ export default async function ChapterPage({ params }: Props) {
         bookSlug={book.slug}
         bookName={book.name}
         chapter={chapter}
+        initialSelection={select ? parseVerseList(select) : []}
       />
 
       <nav className="mt-12 flex items-center justify-between border-t border-rule pt-5 text-sm">

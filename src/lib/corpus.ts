@@ -264,6 +264,70 @@ export function getRenderings(
     .slice(0, limit);
 }
 
+export interface SharedRoot {
+  strongs: string;
+  lemma: string | null;
+  translit: string | null;
+  gloss: string | null;
+  language: "hebrew" | "greek";
+  /** How many of the selected verses contain it. */
+  verses: number;
+  /** Total instances across the selection. */
+  total: number;
+  /** One surface form, for linking straight to a form page. */
+  sample: string | null;
+}
+
+/**
+ * Roots occurring in more than one of the selected verses.
+ *
+ * When several verses are opened together the interesting question is what
+ * holds them together, so this is what the selection view leads with. Articles
+ * and conjunctions would swamp it, so roots appearing in every verse but
+ * carrying no lexical weight are filtered out by their part of speech.
+ */
+export function getSharedRoots(verseIds: number[]): SharedRoot[] {
+  if (verseIds.length < 2) return [];
+  const placeholders = verseIds.map(() => "?").join(", ");
+
+  const rows = queryAll<SharedRoot & { morph: string | null }>(
+    `SELECT w.strongs,
+            s.lemma, s.translit, s.gloss, s.language, s.morph,
+            COUNT(DISTINCT w.verse_id) AS verses,
+            COUNT(*)                   AS total,
+            MIN(w.original)            AS sample
+       FROM words w
+       JOIN strongs s ON s.id = w.strongs
+      WHERE w.verse_id IN (${placeholders}) AND w.strongs IS NOT NULL
+      GROUP BY w.strongs
+     HAVING COUNT(DISTINCT w.verse_id) > 1
+      ORDER BY verses DESC, total DESC`,
+    verseIds,
+  );
+
+  /**
+   * Grammatical glue, by the part of speech recorded in the lexicon. The Greek
+   * and Hebrew entries use different abbreviations, so both are spelled out.
+   * Verbs, nouns, adjectives, adverbs and proper names are all kept — a name
+   * shared between two verses is worth seeing.
+   */
+  const FUNCTION_WORDS =
+    /^(?:Prefix$|[GA]:(?:PREP|PRT-N|PRT|CONJ|COND|INJ|T|P-\d|P)(?:$|[-\s])|H:(?:Prep|Part|Neg|Conj|RelP|DemP|PerP|PosP|RefP|Art|Intj|Cond)(?:$|[-\s]))/i;
+
+  return rows
+    .filter((row) => !row.morph || !FUNCTION_WORDS.test(row.morph))
+    .map((row) => ({
+      strongs: row.strongs,
+      lemma: row.lemma,
+      translit: row.translit,
+      gloss: row.gloss,
+      language: row.language,
+      verses: row.verses,
+      total: row.total,
+      sample: row.sample,
+    }));
+}
+
 export function countFormOccurrences(strongsId: string, original: string): number {
   return (
     queryOne<{ c: number }>(

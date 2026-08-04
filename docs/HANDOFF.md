@@ -3,7 +3,7 @@
 How BibleRoot is built and what tends to catch people out. The README covers
 using the app; this covers working on it.
 
-Current as of `v5`.
+Current as of `v6`.
 
 ## State
 
@@ -16,6 +16,7 @@ Tagged releases on `main` at `neutrinoevent/BibleRoot`:
 | `v3` | Published text used for reading, multi-verse selection, MIT licence |
 | `v4` | Inflected forms as first-class pages, with a grammatical glossary |
 | `v5` | All 31,102 verses present, with a textual-criticism panel on the disputed sixteen |
+| `v6` | Shared-root analysis and cross-verse tracing across a verse selection |
 
 Everything in the README works and was exercised in a browser.
 
@@ -44,7 +45,8 @@ src/lib/books.ts          the 66 books, with forgiving name matching
 src/lib/refs.ts           "prov 20.22" → a route
 src/lib/resources.ts      external link patterns and per-site book codes
 src/lib/library.ts        notes, saved terms and custom resources, all on disk
-src/components/           ReadingLine, WordPopover, ChapterVerses, NotesPanel are client-side
+src/components/           ReadingLine, WordPopover, ChapterVerses, SharedRoots are client-side
+src/components/TermHighlight.tsx  context for tracing one root across a selection
 ```
 
 ## Decisions
@@ -212,6 +214,11 @@ files removed for the same reason.
 - Tags exist in note and term frontmatter, but nothing browses them.
 - The interlinear is verse-scoped; the chapter view is plain reading text.
 - A multi-verse selection is confined to one chapter.
+- `getSharedRoots` filters grammatical glue by the lexicon's part-of-speech
+  code. Greek and Hebrew entries use different abbreviations (`G:T`, `G:CONJ`,
+  `H:Prep`, `H:RelP`, `Prefix`), so the filter spells both out; writing it
+  against one scheme let the article ὁ through as a "shared root". Verbs, nouns,
+  adjectives, adverbs and proper names are deliberately kept.
 - Textual variants (Qere/Ketiv, manuscript differences) are not imported, though
   the STEPBible TAHOT source carries them.
 - 281 word chunks out of 386,071 do not align to the published text and are not

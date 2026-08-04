@@ -42,11 +42,19 @@ On a verse page:
   Aramaic running right to left. Select any word to open its root.
 - **Notes** — anchored to that verse.
 
-In a chapter, **Select verses** turns on checkboxes. Tick any verses, in any
-order, and open them together: `/verse/john/1/1,7,10` shows all three with their
-interlinears, and a note written there is filed under the whole selection.
-Ranges work too (`1,3-5`). It is a URL, so a selection can be bookmarked or
-shared.
+### Studying several verses together
+
+In a chapter, **Select verses to study together** turns on checkboxes. Tick any
+verses, in any order — they need not be next to each other — and open them at
+once: `/verse/john/1/1,4,5,9`. Ranges work too (`1,3-5`), and any single verse
+page links straight into selection with itself already ticked.
+
+The selection then shows **the words those verses share**: roots occurring in
+more than one of them, with the grammatical glue filtered out. Select one and it
+is traced through every verse at once. Opening John 1:1, 4, 5 and 9 surfaces
+εἰμί, φῶς and ἄνθρωπος; tracing εἰμί lights up all six occurrences of ἦν in the
+prologue. Notes written there are filed under the whole selection, and the URL
+can be bookmarked or shared.
 
 Clicking a word opens **the form standing in the text**, not the dictionary
 entry. קַוֵּה gets its own page: what a Piel imperative is doing, the two places

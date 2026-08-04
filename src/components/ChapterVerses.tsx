@@ -16,16 +16,24 @@ interface Props {
   bookSlug: string;
   bookName: string;
   chapter: number;
+  /** Arriving from a verse page starts selection with that verse ticked. */
+  initialSelection?: number[];
 }
 
 /**
  * Selection uses visible checkboxes rather than modifier-clicks, so it works
  * the same way on a touch screen as on a desktop.
  */
-export function ChapterVerses({ verses, bookSlug, bookName, chapter }: Props) {
+export function ChapterVerses({
+  verses,
+  bookSlug,
+  bookName,
+  chapter,
+  initialSelection = [],
+}: Props) {
   const router = useRouter();
-  const [selected, setSelected] = useState<number[]>([]);
-  const [selecting, setSelecting] = useState(false);
+  const [selected, setSelected] = useState<number[]>(initialSelection);
+  const [selecting, setSelecting] = useState(initialSelection.length > 0);
 
   function toggle(verse: number) {
     setSelected((current) =>
@@ -42,22 +50,26 @@ export function ChapterVerses({ verses, bookSlug, bookName, chapter }: Props) {
 
   return (
     <>
-      <div className="mt-6 flex items-center justify-between border-b border-rule pb-3">
+      <div className="mt-6 flex flex-wrap items-center justify-between gap-3 border-b border-rule pb-3">
         <button
           type="button"
           onClick={() => {
             setSelecting((on) => !on);
             setSelected([]);
           }}
-          className="text-sm text-accent hover:underline"
+          className={`rounded-lg border px-3 py-1.5 text-sm font-medium transition-colors ${
+            selecting
+              ? "border-rule-strong bg-paper-sunken text-ink"
+              : "border-rule-strong bg-paper-raised text-ink hover:border-accent"
+          }`}
         >
-          {selecting ? "Cancel selection" : "Select verses"}
+          {selecting ? "Cancel selection" : "☑ Select verses to study together"}
         </button>
-        {selecting && (
-          <span className="text-xs text-ink-faint">
-            Tick any verses, in any order, then open them together.
-          </span>
-        )}
+        <span className="text-xs text-ink-faint">
+          {selecting
+            ? "Tick any verses, in any order — they need not be next to each other."
+            : "Compare several verses at once, and see the words they share."}
+        </span>
       </div>
 
       <div className="mt-6 space-y-1">

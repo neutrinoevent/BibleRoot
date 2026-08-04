@@ -6,9 +6,12 @@ import { InterlinearGrid } from "@/components/InterlinearGrid";
 import { NotesPanel } from "@/components/NotesPanel";
 import { ReadingLine } from "@/components/ReadingLine";
 import { ResourceLinks } from "@/components/ResourceLinks";
+import { SharedRoots } from "@/components/SharedRoots";
+import { TermHighlightProvider } from "@/components/TermHighlight";
 import {
   getAnnotatedWords,
   getNeighbours,
+  getSharedRoots,
   getVerse,
   isOmittedVerse,
   type AnnotatedWord,
@@ -156,6 +159,7 @@ export default async function VersePage({ params }: Props) {
     ...applyCustomVerseResources(custom.verse, verseContext),
   ];
 
+  const sharedRoots = multiple ? getSharedRoots(found.map((entry) => entry.verse.id)) : [];
   const { prev, next } = getNeighbours(found[0].verse.id);
   const language = found
     .flatMap((entry) => getAnnotatedWords(entry.verse.id))
@@ -185,18 +189,33 @@ export default async function VersePage({ params }: Props) {
         </p>
       )}
 
-      {found.map((entry) => (
-        <VerseBlock
-          key={entry.verse.id}
-          verse={entry.verse}
-          words={getAnnotatedWords(entry.verse.id)}
-          showRef={multiple}
-        />
-      ))}
+      <TermHighlightProvider>
+        {found.map((entry) => (
+          <VerseBlock
+            key={entry.verse.id}
+            verse={entry.verse}
+            words={getAnnotatedWords(entry.verse.id)}
+            showRef={multiple}
+          />
+        ))}
 
-      <p className="mt-3 text-xs text-ink-faint">
-        Hover any word for the original behind it · click to keep it open · Berean Study Bible
-      </p>
+        <p className="mt-3 text-xs text-ink-faint">
+          Hover any word for the original behind it · click to keep it open · Berean Study Bible
+        </p>
+
+        <SharedRoots roots={sharedRoots} verseCount={found.length} />
+      </TermHighlightProvider>
+
+      {!multiple && (
+        <p className="mt-6 text-sm">
+          <Link
+            href={`${chapterHref(book, chapter)}?select=${numbers[0]}`}
+            className="text-accent hover:underline"
+          >
+            Compare with other verses in {book.name} {chapter} →
+          </Link>
+        </p>
+      )}
 
       {!multiple && found[0].verse.crossref && (
         <section className="mt-8">
