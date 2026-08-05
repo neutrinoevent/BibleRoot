@@ -1,9 +1,22 @@
+import Link from "next/link";
+
 export const metadata = { title: "About — BibleRoot" };
 
 export default function AboutPage() {
   return (
     <div className="mx-auto max-w-2xl px-5 py-12">
       <h1 className="font-serif text-3xl tracking-tight">About BibleRoot</h1>
+
+      <figure className="mt-6 border-l-2 border-accent/50 pl-5">
+        <blockquote className="font-serif text-xl leading-relaxed text-ink">
+          Your word is a lamp to my feet and a light to my path.
+        </blockquote>
+        <figcaption className="mt-2 text-sm">
+          <Link href="/verse/psalms/119/105" className="text-accent hover:underline">
+            Psalm 119:105
+          </Link>
+        </figcaption>
+      </figure>
 
       <p className="mt-6 leading-relaxed text-ink-soft">
         BibleRoot runs entirely on your machine. The text, the word-by-word alignment and the
@@ -156,6 +169,20 @@ export default function AboutPage() {
         redistribute anything built from that data, honour those licences; the{" "}
         <code>NOTICE.md</code> file in the repository sets out which applies to what.
       </p>
+
+      <figure className="mt-12 border-t border-rule pt-8">
+        <blockquote className="font-serif text-xl leading-relaxed text-ink">
+          <p>Honor the LORD with your wealth and with the firstfruits of all your crops;</p>
+          <p className="mt-2">
+            then your barns will be filled with plenty, and your vats will overflow with new wine.
+          </p>
+        </blockquote>
+        <figcaption className="mt-3 text-sm">
+          <Link href="/verse/proverbs/3/9,10" className="text-accent hover:underline">
+            Proverbs 3:9–10
+          </Link>
+        </figcaption>
+      </figure>
     </div>
   );
 }
