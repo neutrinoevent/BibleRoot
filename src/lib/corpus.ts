@@ -131,6 +131,17 @@ export function getAnnotatedWords(verseId: number): AnnotatedWord[] {
   );
 }
 
+/** Which of the given Strong's ids actually have an entry. */
+export function existingStrongs(ids: string[]): Set<string> {
+  if (ids.length === 0) return new Set();
+  const placeholders = ids.map(() => "?").join(", ");
+  const rows = queryAll<{ id: string }>(
+    `SELECT id FROM strongs WHERE id IN (${placeholders})`,
+    ids,
+  );
+  return new Set(rows.map((row) => row.id));
+}
+
 export function getStrongs(id: string): StrongsEntry | null {
   return queryOne<StrongsEntry>("SELECT * FROM strongs WHERE id = ?", [id]);
 }

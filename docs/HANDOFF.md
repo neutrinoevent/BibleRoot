@@ -3,7 +3,7 @@
 How BibleRoot is built and what tends to catch people out. The README covers
 using the app; this covers working on it.
 
-Current as of `v8`.
+Current as of `v9`.
 
 ## State
 
@@ -19,6 +19,7 @@ Tagged releases on `main` at `neutrinoevent/BibleRoot`:
 | `v6` | Shared-root analysis and cross-verse tracing across a verse selection |
 | `v7` | Hover card reachable on the way to its links |
 | `v8` | Compound words decomposed on form pages |
+| `v9` | Lexicon cross-references and the arrival form made clickable |
 
 Everything in the README works and was exercised in a browser.
 

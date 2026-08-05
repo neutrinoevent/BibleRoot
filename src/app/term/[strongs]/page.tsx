@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
 import { DeepLexicon } from "@/components/DeepLexicon";
+import { LexiconText, citedStrongs } from "@/components/LexiconText";
 import { NotesPanel } from "@/components/NotesPanel";
 import { ResourceLinks } from "@/components/ResourceLinks";
 import { SaveTermButton } from "@/components/SaveTermButton";
@@ -10,6 +11,7 @@ import { BOOKS_BY_ID } from "@/lib/books";
 import {
   countOccurrences,
   describeForm,
+  existingStrongs,
   getDeepLexiconEntries,
   getInflectedForms,
   getOccurrences,
@@ -53,6 +55,9 @@ export default async function TermPage({ params, searchParams }: Props) {
   const spread = getOccurrenceSpread(strongs);
   const deepEntries = getDeepLexiconEntries(strongs);
   const forms = getInflectedForms(strongs);
+  const cited = existingStrongs(
+    citedStrongs(entry.derivation, entry.definition, entry.kjv_usage),
+  );
   const arrivedFrom = form ? describeForm(strongs, form) : null;
   const [saved, notes, custom] = await Promise.all([
     getTerm(strongs),
@@ -121,13 +126,15 @@ export default async function TermPage({ params, searchParams }: Props) {
       {arrivedFrom && arrivedFrom.original.toLowerCase() !== entry.lemma?.toLowerCase() && (
         <p className="mt-6 rounded-lg border border-rule bg-paper-sunken px-4 py-3 text-sm text-ink-soft">
           You came from{" "}
-          <span
-            className={`${scriptClass} text-lg`}
+          <Link
+            href={wordHref(entry.id, arrivedFrom.original)}
+            className={`${scriptClass} text-lg decoration-dotted underline-offset-4 hover:underline`}
             dir={isGreek ? "ltr" : "rtl"}
             lang={isGreek ? "el" : "he"}
+            title="Back to this form"
           >
             {arrivedFrom.original}
-          </span>
+          </Link>
           {arrivedFrom.parsing_long && (
             <span className="text-ink-faint"> ({arrivedFrom.parsing_long})</span>
           )}
@@ -135,7 +142,13 @@ export default async function TermPage({ params, searchParams }: Props) {
           <span className={scriptClass} dir={isGreek ? "ltr" : "rtl"}>
             {entry.lemma}
           </span>
-          .
+          .{" "}
+          <Link
+            href={wordHref(entry.id, arrivedFrom.original)}
+            className="text-accent hover:underline"
+          >
+            Back to that form →
+          </Link>
         </p>
       )}
 
@@ -149,13 +162,13 @@ export default async function TermPage({ params, searchParams }: Props) {
             <dt className="text-xs uppercase tracking-wide text-ink-faint">
               Strong&apos;s definition
             </dt>
-            <dd className="mt-1 leading-relaxed text-ink">{entry.definition}</dd>
+            <dd className="mt-1 leading-relaxed text-ink"><LexiconText text={entry.definition} known={cited} /></dd>
           </div>
         )}
         {entry.derivation && (
           <div>
             <dt className="text-xs uppercase tracking-wide text-ink-faint">Derivation</dt>
-            <dd className="mt-1 leading-relaxed text-ink-soft">{entry.derivation}</dd>
+            <dd className="mt-1 leading-relaxed text-ink-soft"><LexiconText text={entry.derivation} known={cited} /></dd>
           </div>
         )}
         {entry.morph && (
@@ -177,7 +190,7 @@ export default async function TermPage({ params, searchParams }: Props) {
             <dt className="text-xs uppercase tracking-wide text-ink-faint">
               Rendered in the KJV as
             </dt>
-            <dd className="mt-1 leading-relaxed text-ink-soft">{entry.kjv_usage}</dd>
+            <dd className="mt-1 leading-relaxed text-ink-soft"><LexiconText text={entry.kjv_usage} known={cited} /></dd>
           </div>
         )}
       </dl>
