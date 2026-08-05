@@ -108,7 +108,9 @@ export default async function TermPage({ params, searchParams }: Props) {
           <p className="mt-1 text-sm text-ink-faint">
             <span className="font-mono">{entry.id}</span> ·{" "}
             {isGreek ? "Greek" : "Hebrew / Aramaic"} ·{" "}
-            {total.toLocaleString()} occurrence{total === 1 ? "" : "s"}
+            <a href="#occurrences" className="text-accent hover:underline">
+              {total.toLocaleString()} occurrence{total === 1 ? "" : "s"}
+            </a>
           </p>
         </div>
 
@@ -226,42 +228,7 @@ export default async function TermPage({ params, searchParams }: Props) {
 
       <DeepLexicon entries={deepEntries} />
 
-      <ResourceLinks
-        links={links}
-        heading="Take it further"
-        blurb="Other trusted resources, each opening at this exact word."
-      />
-
-      {topBooks.length > 0 && (
-        <section className="mt-10">
-          <h2 className="font-serif text-lg">Where it appears</h2>
-          <ul className="mt-3 space-y-1.5">
-            {topBooks.map((row) => {
-              const book = BOOKS_BY_ID.get(row.book_id);
-              if (!book) return null;
-              return (
-                <li key={row.book_id} className="flex items-center gap-3 text-sm">
-                  <span className="w-32 shrink-0 truncate text-ink-soft">{book.name}</span>
-                  <span
-                    className="h-2 rounded-full bg-accent/60"
-                    style={{ width: `${Math.max(4, (row.c / maxCount) * 60)}%` }}
-                    aria-hidden
-                  />
-                  <span className="text-xs text-ink-faint">{row.c}</span>
-                </li>
-              );
-            })}
-          </ul>
-          {spread.length > topBooks.length && (
-            <p className="mt-2 text-xs text-ink-faint">
-              and {spread.length - topBooks.length} more book
-              {spread.length - topBooks.length === 1 ? "" : "s"}
-            </p>
-          )}
-        </section>
-      )}
-
-      <section className="mt-10">
+      <section id="occurrences" className="mt-10 scroll-mt-20">
         <h2 className="font-serif text-lg">
           Every occurrence{" "}
           <span className="text-sm font-normal text-ink-faint">
@@ -307,6 +274,41 @@ export default async function TermPage({ params, searchParams }: Props) {
           </Link>
         )}
       </section>
+
+      {topBooks.length > 0 && (
+        <section className="mt-10">
+          <h2 className="font-serif text-lg">Where it appears</h2>
+          <ul className="mt-3 space-y-1.5">
+            {topBooks.map((row) => {
+              const book = BOOKS_BY_ID.get(row.book_id);
+              if (!book) return null;
+              return (
+                <li key={row.book_id} className="flex items-center gap-3 text-sm">
+                  <span className="w-32 shrink-0 truncate text-ink-soft">{book.name}</span>
+                  <span
+                    className="h-2 rounded-full bg-accent/60"
+                    style={{ width: `${Math.max(4, (row.c / maxCount) * 60)}%` }}
+                    aria-hidden
+                  />
+                  <span className="text-xs text-ink-faint">{row.c}</span>
+                </li>
+              );
+            })}
+          </ul>
+          {spread.length > topBooks.length && (
+            <p className="mt-2 text-xs text-ink-faint">
+              and {spread.length - topBooks.length} more book
+              {spread.length - topBooks.length === 1 ? "" : "s"}
+            </p>
+          )}
+        </section>
+      )}
+
+      <ResourceLinks
+        links={links}
+        heading="Take it further"
+        blurb="Other trusted resources, each opening at this exact word."
+      />
 
       <section className="mt-12">
         <NotesPanel

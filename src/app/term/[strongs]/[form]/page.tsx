@@ -107,8 +107,10 @@ export default async function FormPage({ params, searchParams }: Props) {
             <p className="mt-2 font-serif text-lg italic text-ink-soft">{form.translit}</p>
           )}
           <p className="mt-1 text-sm text-ink-soft">{form.parsing_long}</p>
-          <p className="mt-1 text-sm text-ink-faint">
-            {total.toLocaleString()} occurrence{total === 1 ? "" : "s"} of this exact form
+          <p className="mt-1 text-sm">
+            <a href="#occurrences" className="text-accent hover:underline">
+              {total.toLocaleString()} occurrence{total === 1 ? "" : "s"} of this exact form
+            </a>
           </p>
         </div>
 
@@ -224,58 +226,7 @@ export default async function FormPage({ params, searchParams }: Props) {
         </section>
       )}
 
-      {siblings.length > 0 && (
-        <section className="mt-10">
-          <h2 className="font-serif text-lg">Other forms of this root</h2>
-          <p className="mt-1 text-sm text-ink-faint">
-            Open any of them here to compare, or study one in full.
-          </p>
-          <FormExplorer
-            strongs={entry.id}
-            forms={siblings}
-            lemma={entry.lemma}
-            language={entry.language}
-            currentForm={form.original}
-          />
-        </section>
-      )}
-
-      {topBooks.length > 1 && (
-        <section className="mt-10">
-          <h2 className="font-serif text-lg">Where this form appears</h2>
-          <ul className="mt-3 space-y-1.5">
-            {topBooks.map((row) => {
-              const book = BOOKS_BY_ID.get(row.book_id);
-              if (!book) return null;
-              return (
-                <li key={row.book_id} className="flex items-center gap-3 text-sm">
-                  <span className="w-32 shrink-0 truncate text-ink-soft">{book.name}</span>
-                  <span
-                    className="h-2 rounded-full bg-accent/60"
-                    style={{ width: `${Math.max(4, (row.c / maxCount) * 60)}%` }}
-                    aria-hidden
-                  />
-                  <span className="text-xs text-ink-faint">{row.c}</span>
-                </li>
-              );
-            })}
-          </ul>
-          {spread.length > topBooks.length && (
-            <p className="mt-2 text-xs text-ink-faint">
-              and {spread.length - topBooks.length} more book
-              {spread.length - topBooks.length === 1 ? "" : "s"}
-            </p>
-          )}
-        </section>
-      )}
-
-      <ResourceLinks
-        links={links}
-        heading="Take it further"
-        blurb="Other resources for this word. They are arranged by dictionary form, so each opens at the headword."
-      />
-
-      <section className="mt-10">
+      <section id="occurrences" className="mt-10 scroll-mt-20">
         <h2 className="font-serif text-lg">
           Every occurrence of this form{" "}
           <span className="text-sm font-normal text-ink-faint">
@@ -315,6 +266,57 @@ export default async function FormPage({ params, searchParams }: Props) {
           </Link>
         )}
       </section>
+
+      {topBooks.length > 1 && (
+        <section className="mt-10">
+          <h2 className="font-serif text-lg">Where this form appears</h2>
+          <ul className="mt-3 space-y-1.5">
+            {topBooks.map((row) => {
+              const book = BOOKS_BY_ID.get(row.book_id);
+              if (!book) return null;
+              return (
+                <li key={row.book_id} className="flex items-center gap-3 text-sm">
+                  <span className="w-32 shrink-0 truncate text-ink-soft">{book.name}</span>
+                  <span
+                    className="h-2 rounded-full bg-accent/60"
+                    style={{ width: `${Math.max(4, (row.c / maxCount) * 60)}%` }}
+                    aria-hidden
+                  />
+                  <span className="text-xs text-ink-faint">{row.c}</span>
+                </li>
+              );
+            })}
+          </ul>
+          {spread.length > topBooks.length && (
+            <p className="mt-2 text-xs text-ink-faint">
+              and {spread.length - topBooks.length} more book
+              {spread.length - topBooks.length === 1 ? "" : "s"}
+            </p>
+          )}
+        </section>
+      )}
+
+      {siblings.length > 0 && (
+        <section className="mt-10">
+          <h2 className="font-serif text-lg">Other forms of this root</h2>
+          <p className="mt-1 text-sm text-ink-faint">
+            Open any of them here to compare, or study one in full.
+          </p>
+          <FormExplorer
+            strongs={entry.id}
+            forms={siblings}
+            lemma={entry.lemma}
+            language={entry.language}
+            currentForm={form.original}
+          />
+        </section>
+      )}
+
+      <ResourceLinks
+        links={links}
+        heading="Take it further"
+        blurb="Other resources for this word. They are arranged by dictionary form, so each opens at the headword."
+      />
 
       <section className="mt-12">
         <NotesPanel
