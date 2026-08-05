@@ -17,7 +17,8 @@ export function DeepLexicon({ entries }: Props) {
     <section className="mt-10">
       <h2 className="font-serif text-lg">Scholarly lexicons</h2>
       <p className="mt-1 text-sm text-ink-faint">
-        Full entries. Verse citations inside them open here.
+        The standard reference works, reproduced in full. Every verse they cite is a link you
+        can follow.
       </p>
 
       <div className="mt-4 space-y-4">

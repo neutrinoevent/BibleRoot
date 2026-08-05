@@ -77,7 +77,7 @@ export function NotesPanel({ notes, verseRef, strongs, heading = "Notes" }: Prop
 
       {notes.length === 0 && !composing && (
         <p className="mt-2 text-sm text-ink-faint">
-          Nothing yet. Notes are saved as markdown files in <code>data/library/notes</code>.
+          Nothing yet. Whatever you write stays on your own computer.
         </p>
       )}
 

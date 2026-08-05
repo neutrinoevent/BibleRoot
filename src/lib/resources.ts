@@ -77,24 +77,24 @@ export function termResources(term: TermContext): ResourceLink[] {
   const links: ResourceLink[] = [
     {
       label: "Bible Hub",
-      description: "Strong's entry with the exhaustive concordance of every occurrence",
+      description: "Every place this word appears, alongside its dictionary entry",
       url: `https://biblehub.com/${section}/${term.number}.htm`,
     },
     {
       label: "Englishman's Concordance",
-      description: "Every verse using this root, listed with its inflected form",
+      description: "Each verse it appears in, shown in the shape it takes there",
       url: `https://biblehub.com/${section}/strongs_${term.number}.htm`,
     },
     {
       label: "Blue Letter Bible",
-      description: "Lexicon entry, Strong's usage counts and interlinear search",
+      description: "Dictionary entry, how often it is used, and an interlinear to read alongside",
       url: `https://www.blueletterbible.org/lexicon/${term.strongs.toLowerCase()}/kjv/${
         isGreek ? "tr" : "wlc"
       }/0-1/`,
     },
     {
       label: "STEPBible",
-      description: "Tyndale House lexicon, morphology and parallel versions",
+      description: "A second dictionary, the grammar, and versions set side by side",
       url: `https://www.stepbible.org/?q=strong=${term.strongs}`,
     },
   ];
@@ -102,7 +102,7 @@ export function termResources(term: TermContext): ResourceLink[] {
   if (isGreek && term.lemma) {
     links.push({
       label: "Logeion",
-      description: "Liddell–Scott–Jones and the full classical Greek lexica, side by side",
+      description: "The great classical Greek dictionaries, showing how the word was used beyond the Bible",
       url: `https://logeion.uchicago.edu/${encodeURIComponent(term.lemma)}`,
     });
   }
@@ -112,7 +112,7 @@ export function termResources(term: TermContext): ResourceLink[] {
     if (headword) {
       links.push({
         label: "Wiktionary",
-        description: "Etymology, cognates and later usage of the word",
+        description: "Where the word came from, its relatives, and how it was used since",
         url: `https://en.wiktionary.org/wiki/${encodeURIComponent(headword)}`,
       });
     }
@@ -126,32 +126,32 @@ export function verseResources(context: VerseContext): ResourceLink[] {
   const links: ResourceLink[] = [
     {
       label: "Bible Hub interlinear",
-      description: "The full interlinear for this verse, word by word",
+      description: "This verse word by word, with the original beneath each one",
       url: `https://biblehub.com/interlinear/${bibleHubBook(book)}/${chapter}-${verse}.htm`,
     },
     {
       label: "Bible Hub commentaries",
-      description: "Barnes, Gill, Keil–Delitzsch, Pulpit and others on this verse",
+      description: "What Barnes, Gill, Keil–Delitzsch, the Pulpit commentary and others make of it",
       url: `https://biblehub.com/commentaries/${bibleHubBook(book)}/${chapter}-${verse}.htm`,
     },
     {
       label: "NET Bible notes",
-      description: "Translators' notes on the textual and lexical decisions here",
+      description: "Why the translators rendered it as they did, and what else it could mean",
       url: `https://netbible.org/bible/${encodeURIComponent(book.name)}+${chapter}:${verse}`,
     },
     {
       label: "STEPBible",
-      description: "Parallel versions, morphology and word-level analysis",
+      description: "Versions side by side, with the grammar of each word",
       url: `https://www.stepbible.org/?q=reference=${book.osis}.${chapter}:${verse}`,
     },
     {
       label: "Blue Letter Bible",
-      description: "Interlinear, concordance and commentary tools",
+      description: "Interlinear, concordance and commentary in one place",
       url: `https://www.blueletterbible.org/kjv/${blbBook(book)}/${chapter}/${verse}/`,
     },
     {
       label: "Bible Gateway",
-      description: "This verse in dozens of other translations",
+      description: "How dozens of other translations render this verse",
       url: `https://www.biblegateway.com/passage/?search=${encodeURIComponent(
         `${book.name} ${chapter}:${verse}`,
       )}`,
@@ -163,7 +163,7 @@ export function verseResources(context: VerseContext): ResourceLink[] {
   if (book.testament === "OT") {
     links.push({
       label: "Sefaria",
-      description: "Hebrew text with Rashi, Ibn Ezra and the Jewish commentary tradition",
+      description: "The Hebrew alongside Rashi, Ibn Ezra and the Jewish commentators",
       url: `https://www.sefaria.org/${sefariaBook(book)}.${chapter}.${verse}`,
     });
   }

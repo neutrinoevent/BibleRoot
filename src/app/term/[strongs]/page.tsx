@@ -125,7 +125,7 @@ export default async function TermPage({ params, searchParams }: Props) {
 
       {arrivedFrom && arrivedFrom.original.toLowerCase() !== entry.lemma?.toLowerCase() && (
         <p className="mt-6 rounded-lg border border-rule bg-paper-sunken px-4 py-3 text-sm text-ink-soft">
-          You came from{" "}
+          You were reading{" "}
           <Link
             href={wordHref(entry.id, arrivedFrom.original)}
             className={`${scriptClass} text-lg decoration-dotted underline-offset-4 hover:underline`}
@@ -138,7 +138,8 @@ export default async function TermPage({ params, searchParams }: Props) {
           {arrivedFrom.parsing_long && (
             <span className="text-ink-faint"> ({arrivedFrom.parsing_long})</span>
           )}
-          . Lexicons file every inflected form under a single headword, which here is{" "}
+          . It is one of the shapes this word takes, and dictionaries gather every shape under
+          a single headword — which is why you have arrived at{" "}
           <span className={scriptClass} dir={isGreek ? "ltr" : "rtl"}>
             {entry.lemma}
           </span>
@@ -147,7 +148,7 @@ export default async function TermPage({ params, searchParams }: Props) {
             href={wordHref(entry.id, arrivedFrom.original)}
             className="text-accent hover:underline"
           >
-            Back to that form →
+            Return to that form →
           </Link>
         </p>
       )}
@@ -204,8 +205,9 @@ export default async function TermPage({ params, searchParams }: Props) {
             </span>
           </h2>
           <p className="mt-1 text-sm text-ink-faint">
-            The same word, inflected. Open any of them for its own grammar and
-            occurrences; all are filed under{" "}
+            A word changes shape according to its work in a sentence. These are the shapes it
+            takes across Scripture — open any one for its grammar and the verses it stands in.
+            All belong to{" "}
             <span className={scriptClass} dir={isGreek ? "ltr" : "rtl"}>
               {entry.lemma}
             </span>
@@ -250,7 +252,7 @@ export default async function TermPage({ params, searchParams }: Props) {
       <ResourceLinks
         links={links}
         heading="Take it further"
-        blurb="The standard reference tools for this word, opened in a new tab."
+        blurb="Other trusted resources, each opening at this exact word."
       />
 
       {topBooks.length > 0 && (

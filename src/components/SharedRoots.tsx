@@ -23,7 +23,7 @@ export function SharedRoots({ roots, verseCount }: Props) {
     <section className="mt-10">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h2 className="font-serif text-lg">
-          Words these verses share{" "}
+          What these verses share{" "}
           <span className="text-sm font-normal text-ink-faint">({roots.length})</span>
         </h2>
         {active && (
@@ -33,8 +33,8 @@ export function SharedRoots({ roots, verseCount }: Props) {
         )}
       </div>
       <p className="mt-1 text-sm text-ink-faint">
-        Roots appearing in more than one of the {verseCount} verses. Select one to trace it through
-        each.
+        Words that occur in more than one of these {verseCount} verses. Choose one to see it lit
+        up in each.
       </p>
 
       <ul className="mt-4 grid gap-2 sm:grid-cols-2">

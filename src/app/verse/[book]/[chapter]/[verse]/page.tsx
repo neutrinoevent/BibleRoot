@@ -179,7 +179,7 @@ export default async function VersePage({ params }: Props) {
       <h1 className="mt-4 font-serif text-2xl tracking-tight">{label}</h1>
       {multiple && (
         <p className="mt-1 text-sm text-ink-faint">
-          {found.length} verses, studied together. Notes here are filed under the whole selection.
+          {found.length} verses, side by side. A note written here belongs to all of them.
         </p>
       )}
       {missing.length > 0 && (
@@ -227,7 +227,7 @@ export default async function VersePage({ params }: Props) {
       <ResourceLinks
         links={links}
         heading={multiple ? `Study ${found[0].verse.ref} elsewhere` : "Study this verse elsewhere"}
-        blurb="Commentaries, translators' notes and parallel versions, opened in a new tab."
+        blurb="Commentaries, translators' notes and other versions of this verse."
       />
 
       <section className="mt-10">

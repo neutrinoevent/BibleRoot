@@ -15,8 +15,8 @@ export default async function LibraryPage() {
     <div className="mx-auto max-w-3xl px-5 py-12">
       <h1 className="font-serif text-3xl tracking-tight">Library</h1>
       <p className="mt-2 text-sm text-ink-soft">
-        {terms.length} saved term{terms.length === 1 ? "" : "s"} · {notes.length} note
-        {notes.length === 1 ? "" : "s"} · stored as markdown in{" "}
+        {terms.length} saved word{terms.length === 1 ? "" : "s"} · {notes.length} note
+        {notes.length === 1 ? "" : "s"} · kept as plain text on your own computer, in{" "}
         <code className="text-ink-faint">{relativeDir}</code>
       </p>
 
@@ -24,7 +24,7 @@ export default async function LibraryPage() {
         <h2 className="font-serif text-lg">Saved terms</h2>
         {terms.length === 0 ? (
           <p className="mt-2 text-sm text-ink-faint">
-            Open any word&apos;s root page and save it to build your own word list.
+            Save a word from any of its pages and it will gather here.
           </p>
         ) : (
           <ul className="mt-4 grid gap-3 sm:grid-cols-2">

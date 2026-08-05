@@ -278,7 +278,7 @@ export default async function FormPage({ params, searchParams }: Props) {
       <ResourceLinks
         links={links}
         heading="Take it further"
-        blurb="Reference tools for this word. They are organised by root, so they open at the dictionary form."
+        blurb="Other resources for this word. They are arranged by dictionary form, so each opens at the headword."
       />
 
       <section className="mt-10">

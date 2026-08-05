@@ -50,3 +50,6 @@ next-env.d.ts
 
 # Personal study destinations — copy data/resources.example.json to create it.
 /data/resources.json
+
+# Superseded UI wording, kept for reference. Not part of the app.
+/copy-archive/
