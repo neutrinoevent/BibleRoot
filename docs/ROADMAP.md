@@ -7,12 +7,13 @@ answered for each one.
 
 ## Where things stand
 
-Shipped through `v17`. The reader, hover lookup and interlinear; scholarly
+Shipped through `v18`. The reader, hover lookup and interlinear; scholarly
 lexicons in full with their citations linked; external deep links; multi-verse
 selection with shared-root tracing; all 31,102 verses including the disputed
-sixteen; the Septuagint bridge between Greek and Hebrew; inflected forms as pages of their own, opening in place before you
-commit to one; roots and forms starred independently; and the library kept where
-each platform keeps an application's files.
+sixteen; the Septuagint bridge between Greek and Hebrew; inflected forms as
+pages of their own, opening in place before you commit to one; roots and forms
+starred independently; and the library kept where each platform keeps an
+application's files.
 
 Recent work has been as much about arrangement as about data: the verses now sit
 where a reader will meet them rather than below the outbound links, the
