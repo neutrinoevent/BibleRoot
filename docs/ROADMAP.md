@@ -10,7 +10,7 @@ answered for each one.
 Shipped through `v17`. The reader, hover lookup and interlinear; scholarly
 lexicons in full with their citations linked; external deep links; multi-verse
 selection with shared-root tracing; all 31,102 verses including the disputed
-sixteen; inflected forms as pages of their own, opening in place before you
+sixteen; the Septuagint bridge between Greek and Hebrew; inflected forms as pages of their own, opening in place before you
 commit to one; roots and forms starred independently; and the library kept where
 each platform keeps an application's files.
 
@@ -60,21 +60,6 @@ in the library folder, in keeping with the rest.
 ---
 
 ## Needs a new import — the source is downloaded or one fetch away
-
-### Greek and Hebrew through the Septuagint
-
-Abbott-Smith entries record the Hebrew word each Greek word renders in the LXX,
-already tagged with a Strong's number:
-
-```xml
-[in LXX for <foreign xml:lang="heb" n="H160">אַהֲבָה</foreign>, …]
-```
-
-There are 5,053 such tags across 3,320 entries, covering 2,349 distinct Hebrew
-roots. The importer currently drops the `n` attribute. Keeping it gives a
-navigable bridge between the Testaments: ἀγάπη through to אַהֲבָה, and a
-"rendered in the LXX by" list on the Hebrew side. It needs a change in
-`deep-lexicons.ts` and a join table.
 
 ### Root and cognate trees
 
@@ -159,7 +144,6 @@ Hebrew word under an English one and give no sign it had done so.
 
 ## If picking one thing
 
-The Septuagint bridge. The data is downloaded and tagged, the change is
-contained to one file and a join table, and it adds a dimension the app does not
-have today: walking from a Greek word in the New Testament to the Hebrew it was
-chosen to render.
+Root and cognate trees. `LexicalIndex.xml` is already downloaded and carries the
+etymological graph; a term page could then show the other words built from the
+same root, which is usually what people mean by studying a word family.

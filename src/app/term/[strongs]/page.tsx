@@ -5,6 +5,7 @@ import type { Metadata } from "next";
 import { DeepLexicon } from "@/components/DeepLexicon";
 import { FormExplorer } from "@/components/FormExplorer";
 import { LexiconText, citedStrongs } from "@/components/LexiconText";
+import { Septuagint } from "@/components/Septuagint";
 import { NotesPanel } from "@/components/NotesPanel";
 import { ResourceLinks } from "@/components/ResourceLinks";
 import { SaveTermButton } from "@/components/SaveTermButton";
@@ -12,6 +13,8 @@ import { BOOKS_BY_ID } from "@/lib/books";
 import {
   countOccurrences,
   describeForm,
+  septuagintBehindGreek,
+  septuagintRenderingsOf,
   existingStrongs,
   getDeepLexiconEntries,
   getInflectedForms,
@@ -56,6 +59,10 @@ export default async function TermPage({ params, searchParams }: Props) {
   const spread = getOccurrenceSpread(strongs);
   const deepEntries = getDeepLexiconEntries(strongs);
   const forms = getInflectedForms(strongs);
+  const septuagint =
+    entry.language === "greek"
+      ? septuagintBehindGreek(strongs)
+      : septuagintRenderingsOf(strongs);
   const cited = existingStrongs(
     citedStrongs(entry.derivation, entry.definition, entry.kjv_usage),
   );
@@ -228,6 +235,10 @@ export default async function TermPage({ params, searchParams }: Props) {
 
       <DeepLexicon entries={deepEntries} />
 
+      {isGreek && (
+        <Septuagint matches={septuagint} lemma={entry.lemma} direction="behind-greek" />
+      )}
+
       <section id="occurrences" className="mt-10 scroll-mt-20">
         <h2 className="font-serif text-lg">
           Every occurrence{" "}
@@ -302,6 +313,14 @@ export default async function TermPage({ params, searchParams }: Props) {
             </p>
           )}
         </section>
+      )}
+
+      {!isGreek && (
+        <Septuagint
+          matches={septuagint}
+          lemma={entry.lemma}
+          direction="renderings-of-hebrew"
+        />
       )}
 
       <ResourceLinks

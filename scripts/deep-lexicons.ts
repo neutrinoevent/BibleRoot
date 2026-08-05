@@ -375,3 +375,54 @@ export async function buildDeepLexicons(
 
   return { entries, twot };
 }
+
+/* ------------------------------------------------------------- Septuagint */
+
+/** "H0160" and "G0026" normalise to "H160" and "G26". */
+function strongsId(raw: string): string | null {
+  const match = /^([HG])0*(\d+)/i.exec(raw.trim());
+  return match ? `${match[1].toUpperCase()}${Number(match[2])}` : null;
+}
+
+export interface SeptuagintLink {
+  greek: string;
+  hebrew: string;
+  /** The Hebrew as Abbott-Smith prints it, for when our lexicon lacks a lemma. */
+  hebrewWord: string | null;
+}
+
+/**
+ * Which Hebrew words the Septuagint translators rendered with a given Greek word.
+ *
+ * Abbott-Smith records this in a container of its own, `<seg type="septuagint">`.
+ * Only that container is read: Hebrew also appears in etymological notes — "of
+ * Hebrew origin" — and a word's derivation is a different claim from a
+ * translator's choice. Mixing the two would put a false correspondence in front
+ * of a reader.
+ */
+export async function readSeptuagintLinks(sourceDir: string): Promise<SeptuagintLink[]> {
+  const raw = await readFile(path.join(sourceDir, "abbott-smith.tei.xml"), "utf8");
+  const links: SeptuagintLink[] = [];
+  const seen = new Set<string>();
+
+  for (const entry of raw.matchAll(/<entry\b[^>]*n="([^"]*)"[^>]*>([\s\S]*?)<\/entry>/g)) {
+    const parts = entry[1].split("|");
+    if (parts.length < 2) continue;
+    const greek = strongsId(parts[1]);
+    if (!greek || !greek.startsWith("G")) continue;
+
+    for (const segment of entry[2].matchAll(/<seg type="septuagint">([\s\S]*?)<\/seg>/g)) {
+      for (const tag of segment[1].matchAll(
+        /<foreign xml:lang="heb" n="(H\d+)"[^>]*>([^<]*)<\/foreign>/g,
+      )) {
+        const hebrew = strongsId(tag[1]);
+        if (!hebrew) continue;
+        const key = `${greek}:${hebrew}`;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        links.push({ greek, hebrew, hebrewWord: tag[2].trim() || null });
+      }
+    }
+  }
+  return links;
+}

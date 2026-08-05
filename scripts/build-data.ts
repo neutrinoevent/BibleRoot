@@ -27,7 +27,7 @@ import {
   stripPlaceholderMarks,
   stripSuppliedMarkers,
 } from "../src/lib/render.ts";
-import { buildDeepLexicons, type DeepEntry } from "./deep-lexicons.ts";
+import { buildDeepLexicons, readSeptuagintLinks, type DeepEntry } from "./deep-lexicons.ts";
 import {
   DISPUTED_VERSES,
   describeAttribution,
@@ -168,6 +168,7 @@ function createSchema(db: DatabaseSync) {
     DROP TABLE IF EXISTS words;
     DROP TABLE IF EXISTS strongs;
     DROP TABLE IF EXISTS lexicon_entries;
+    DROP TABLE IF EXISTS septuagint;
     DROP TABLE IF EXISTS meta;
     DROP TABLE IF EXISTS verses_fts;
 
@@ -243,6 +244,15 @@ function createSchema(db: DatabaseSync) {
       PRIMARY KEY (strongs, source)
     );
     CREATE INDEX lexicon_entries_strongs_idx ON lexicon_entries(strongs);
+
+    -- Which Hebrew words the Septuagint rendered with a given Greek word.
+    CREATE TABLE septuagint (
+      greek       TEXT NOT NULL,
+      hebrew      TEXT NOT NULL,
+      hebrew_word TEXT,
+      PRIMARY KEY (greek, hebrew)
+    );
+    CREATE INDEX septuagint_hebrew_idx ON septuagint(hebrew);
 
     CREATE TABLE meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
 
@@ -473,6 +483,15 @@ async function importDeepLexicons(db: DatabaseSync) {
   }
   for (const [strongs, number] of twot) setTwot.run(number, strongs);
   db.exec("COMMIT");
+
+  const septuagint = await readSeptuagintLinks(SOURCE_DIR);
+  const insertLxx = db.prepare(
+    "INSERT OR REPLACE INTO septuagint (greek, hebrew, hebrew_word) VALUES (?, ?, ?)",
+  );
+  db.exec("BEGIN");
+  for (const link of septuagint) insertLxx.run(link.greek, link.hebrew, link.hebrewWord);
+  db.exec("COMMIT");
+  log(`imported ${septuagint.length.toLocaleString()} Septuagint correspondences`);
 
   const bdb = entries.filter((entry) => entry.source === "bdb").length;
   const greek = entries.length - bdb;

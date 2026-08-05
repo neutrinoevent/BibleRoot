@@ -142,6 +142,52 @@ export function existingStrongs(ids: string[]): Set<string> {
   return new Set(rows.map((row) => row.id));
 }
 
+export interface SeptuagintMatch {
+  strongs: string;
+  lemma: string | null;
+  translit: string | null;
+  gloss: string | null;
+  language: "hebrew" | "greek";
+  /** Abbott-Smith's own spelling, used when our lexicon has no lemma. */
+  printed: string | null;
+}
+
+/**
+ * The Hebrew words a Greek word was used to translate in the Septuagint.
+ *
+ * Recorded by Abbott-Smith from the Greek side, so this direction is the one the
+ * source actually documents.
+ */
+export function septuagintBehindGreek(greek: string): SeptuagintMatch[] {
+  return queryAll<SeptuagintMatch>(
+    `SELECT l.hebrew AS strongs, l.hebrew_word AS printed,
+            s.lemma, s.translit, s.gloss, s.language
+       FROM septuagint l
+       LEFT JOIN strongs s ON s.id = l.hebrew
+      WHERE l.greek = ?
+      ORDER BY s.occurrences DESC`,
+    [greek],
+  );
+}
+
+/**
+ * The Greek words the Septuagint used for a Hebrew word.
+ *
+ * Read back out of the same Greek-side notes, so it reaches only Greek words
+ * that also occur in the New Testament.
+ */
+export function septuagintRenderingsOf(hebrew: string): SeptuagintMatch[] {
+  return queryAll<SeptuagintMatch>(
+    `SELECT l.greek AS strongs, NULL AS printed,
+            s.lemma, s.translit, s.gloss, s.language
+       FROM septuagint l
+       LEFT JOIN strongs s ON s.id = l.greek
+      WHERE l.hebrew = ?
+      ORDER BY s.occurrences DESC`,
+    [hebrew],
+  );
+}
+
 export function getStrongs(id: string): StrongsEntry | null {
   return queryOne<StrongsEntry>("SELECT * FROM strongs WHERE id = ?", [id]);
 }
