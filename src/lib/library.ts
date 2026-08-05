@@ -13,8 +13,11 @@ import type { CustomResource, CustomResourceFile } from "./resources";
  * frontmatter header, so the library stays readable, greppable and
  * version-controllable outside the app:
  *
- *   data/library/terms/H7451.md   — a saved word, plus notes about it
- *   data/library/notes/<id>.md    — a free note, optionally anchored to a verse
+ *   terms/H7451.md   — a saved word, plus notes about it
+ *   notes/<id>.md    — a free note, optionally anchored to a verse
+ *
+ * They sit in the folder this platform keeps an application's files in, not in
+ * the project, so that reinstalling or rebuilding never touches them.
  */
 /** The library folder for this platform, created on first use. */
 export function libraryRoot(): string {

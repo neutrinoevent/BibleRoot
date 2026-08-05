@@ -43,6 +43,7 @@ next-env.d.ts
 # BibleRoot corpus — rebuilt locally with `npm run build:data`.
 # The downloaded sources (~65 MB) and the compiled database (~85 MB) are
 # derived artefacts, and the upstream data is meant to be fetched from source.
+/data/library/
 /data/sources/
 /data/bibleroot.db
 /data/bibleroot.db-shm
