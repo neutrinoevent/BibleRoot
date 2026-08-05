@@ -199,13 +199,32 @@ export default async function FormPage({ params, searchParams }: Props) {
 
       {renderings.length > 0 && (
         <section className="mt-10">
-          <h2 className="font-serif text-lg">
-            Rendered in English as{" "}
-            <span className="text-sm font-normal text-ink-faint">
-              ({renderings.length}
-              {renderings.length === 30 ? "+" : ""} way{renderings.length === 1 ? "" : "s"})
-            </span>
-          </h2>
+          <h2 className="font-serif text-lg">How this form is translated</h2>
+          <p className="mt-1 text-sm text-ink-faint">
+            The wordings the Berean Standard Bible reaches for when this exact form appears.
+            Another translation would choose differently, and the shades of meaning the word can
+            carry are wider than any one version shows.
+          </p>
+          <ul className="mt-3 flex flex-wrap gap-2">
+            {renderings.map((rendering) => (
+              <li
+                key={rendering.english}
+                className="rounded-full border border-rule bg-paper-raised px-3 py-1 text-sm text-ink"
+              >
+                {rendering.english}
+                <span className="ml-2 text-xs text-ink-faint">
+                  {rendering.c}
+                  {rendering.c === 1 ? " time" : " times"}
+                </span>
+              </li>
+            ))}
+          </ul>
+        </section>
+      )}
+
+      {siblings.length > 0 && (
+        <section className="mt-10">
+          <h2 className="font-serif text-lg">Other forms of this root</h2>
           <p className="mt-1 text-sm text-ink-faint">
             Open any of them here to compare, or study one in full.
           </p>
@@ -214,34 +233,8 @@ export default async function FormPage({ params, searchParams }: Props) {
             forms={siblings}
             lemma={entry.lemma}
             language={entry.language}
+            currentForm={form.original}
           />
-        </section>
-      )}
-
-      {siblings.length > 0 && (
-        <section className="mt-10">
-          <h2 className="font-serif text-lg">Other forms of this root</h2>
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {siblings.slice(0, 40).map((item) => (
-              <li key={item.original}>
-                <Link
-                  href={`/term/${entry.id}/${encodeURIComponent(item.original)}`}
-                  title={item.parsing_long ?? undefined}
-                  className="block rounded-lg border border-rule bg-paper-raised px-3 py-2 text-center transition-colors hover:border-rule-strong"
-                >
-                  <span className={`${scriptClass} block text-lg`} dir={dir}>
-                    {item.original}
-                  </span>
-                  <span className="block font-mono text-[10px] text-ink-faint">
-                    {item.parsing ?? ""} · {item.c.toLocaleString()}
-                  </span>
-                </Link>
-              </li>
-            ))}
-          </ul>
-          {siblings.length > 40 && (
-            <p className="mt-2 text-xs text-ink-faint">and {siblings.length - 40} more</p>
-          )}
         </section>
       )}
 
