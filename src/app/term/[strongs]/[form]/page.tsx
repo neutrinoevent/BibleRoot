@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
+import { FormExplorer } from "@/components/FormExplorer";
 import { NotesPanel } from "@/components/NotesPanel";
 import { ResourceLinks } from "@/components/ResourceLinks";
 import { SaveTermButton } from "@/components/SaveTermButton";
@@ -205,17 +206,15 @@ export default async function FormPage({ params, searchParams }: Props) {
               {renderings.length === 30 ? "+" : ""} way{renderings.length === 1 ? "" : "s"})
             </span>
           </h2>
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {renderings.map((rendering) => (
-              <li
-                key={rendering.english}
-                className="rounded-full border border-rule bg-paper-raised px-3 py-1 text-sm text-ink"
-              >
-                {rendering.english}
-                <span className="ml-2 text-xs text-ink-faint">{rendering.c}</span>
-              </li>
-            ))}
-          </ul>
+          <p className="mt-1 text-sm text-ink-faint">
+            Open any of them here to compare, or study one in full.
+          </p>
+          <FormExplorer
+            strongs={entry.id}
+            forms={siblings}
+            lemma={entry.lemma}
+            language={entry.language}
+          />
         </section>
       )}
 

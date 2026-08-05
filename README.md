@@ -187,7 +187,5 @@ anything built from them.
 
 ## Docs
 
-- [`docs/HANDOFF.md`](docs/HANDOFF.md) — how it is built, the decisions behind it,
-  and the data quirks that will bite you
-- [`docs/ROADMAP.md`](docs/ROADMAP.md) — future feature ideas, with the data
-  availability for each already worked out
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — where this is going next, with the data
+  availability for each idea already worked out

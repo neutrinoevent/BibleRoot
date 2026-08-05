@@ -53,3 +53,6 @@ next-env.d.ts
 
 # Superseded UI wording, kept for reference. Not part of the app.
 /copy-archive/
+
+# Working notes for whoever maintains this. Local only.
+/docs/HANDOFF.md

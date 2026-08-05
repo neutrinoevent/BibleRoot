@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
 import { DeepLexicon } from "@/components/DeepLexicon";
+import { FormExplorer } from "@/components/FormExplorer";
 import { LexiconText, citedStrongs } from "@/components/LexiconText";
 import { NotesPanel } from "@/components/NotesPanel";
 import { ResourceLinks } from "@/components/ResourceLinks";
@@ -213,37 +214,13 @@ export default async function TermPage({ params, searchParams }: Props) {
             </span>
             .
           </p>
-          <ul className="mt-3 flex flex-wrap gap-2">
-            {forms.slice(0, 40).map((item) => {
-              const isArrival =
-                arrivedFrom?.original.toLowerCase() === item.original.toLowerCase();
-              return (
-                <li key={item.original}>
-                  <Link
-                    href={wordHref(entry.id, item.original)}
-                    title={item.parsing_long ?? item.parsing ?? undefined}
-                    className={`block rounded-lg border px-3 py-2 text-center transition-colors hover:border-rule-strong ${
-                      isArrival ? "border-accent bg-highlight" : "border-rule bg-paper-raised"
-                    }`}
-                  >
-                    <span
-                      className={`${scriptClass} block text-lg`}
-                      dir={isGreek ? "ltr" : "rtl"}
-                      lang={isGreek ? "el" : "he"}
-                    >
-                      {item.original}
-                    </span>
-                    <span className="block font-mono text-[10px] text-ink-faint">
-                      {item.parsing ?? ""} · {item.c.toLocaleString()}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
-          </ul>
-          {forms.length > 40 && (
-            <p className="mt-2 text-xs text-ink-faint">and {forms.length - 40} more</p>
-          )}
+          <FormExplorer
+            strongs={entry.id}
+            forms={forms}
+            lemma={entry.lemma}
+            language={entry.language}
+            currentForm={arrivedFrom?.original ?? null}
+          />
         </section>
       )}
 
