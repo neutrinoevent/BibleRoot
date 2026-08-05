@@ -2,7 +2,8 @@ import Link from "next/link";
 
 import { SearchBox } from "@/components/SearchBox";
 import { corpusExists } from "@/lib/db";
-import { libraryCounts, listNotes, listTerms } from "@/lib/library";
+import { libraryCounts, listNotes, listTerms, savedTermKey } from "@/lib/library";
+import { wordHref } from "@/lib/refs";
 import { scriptOfLanguage } from "@/lib/render";
 
 const EXAMPLES = [
@@ -81,15 +82,16 @@ export default async function HomePage() {
               {recentTerms.map((term) => {
                 const script = scriptOfLanguage(term.language);
                 return (
-                  <li key={term.strongs}>
+                  <li key={savedTermKey(term)}>
                     <Link
-                      href={`/term/${term.strongs}`}
+                      href={wordHref(term.strongs, term.form)}
                       className="flex items-center gap-2 rounded-lg border border-rule bg-paper-raised px-3 py-2 transition-colors hover:border-rule-strong"
                     >
                       <span
                         className={`${script === "hebrew" ? "font-hebrew text-hebrew" : "font-greek text-greek"} text-lg`}
+                        dir={script === "hebrew" ? "rtl" : "ltr"}
                       >
-                        {term.lemma}
+                        {term.form ?? term.lemma}
                       </span>
                       <span className="text-sm text-ink-soft">{term.gloss?.split(";")[0]}</span>
                     </Link>

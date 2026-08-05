@@ -223,6 +223,14 @@ export async function getTerm(strongs: string, form?: string | null): Promise<Sa
   return term ? { ...term, strongs: term.strongs || strongs } : null;
 }
 
+/**
+ * Identifies one saved entry. A root and any number of its forms share a
+ * Strong's number, so the number alone collides between them.
+ */
+export function savedTermKey(term: Pick<SavedTerm, "strongs" | "form">): string {
+  return term.form ? `${term.strongs}:${term.form}` : term.strongs;
+}
+
 export async function listTerms(): Promise<SavedTerm[]> {
   ensureDirs();
   const files = await fsp.readdir(termsDirectory());

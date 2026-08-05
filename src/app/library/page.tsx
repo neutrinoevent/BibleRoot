@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { NotesPanel } from "@/components/NotesPanel";
-import { libraryRootForDisplay, listNotes, listTerms } from "@/lib/library";
+import { libraryRootForDisplay, listNotes, listTerms, savedTermKey } from "@/lib/library";
 import { scriptOfLanguage } from "@/lib/render";
 import { wordHref } from "@/lib/refs";
 
@@ -32,7 +32,7 @@ export default async function LibraryPage() {
             {terms.map((term) => {
               const script = scriptOfLanguage(term.language);
               return (
-                <li key={term.strongs}>
+                <li key={savedTermKey(term)}>
                   <Link
                     href={wordHref(term.strongs, term.form)}
                     className="block h-full rounded-xl border border-rule bg-paper-raised p-4 transition-colors hover:border-rule-strong"
