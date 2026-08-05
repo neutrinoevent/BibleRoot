@@ -7,16 +7,17 @@ answered for each one.
 
 ## Where things stand
 
-Shipped through `v7`: the reader and hover lookup, scholarly lexicons, external
-deep links, multi-verse selection with shared-root tracing, inflected forms as
-first-class pages, and all 31,102 verses including the disputed sixteen.
+Shipped through `v17`. The reader, hover lookup and interlinear; scholarly
+lexicons in full with their citations linked; external deep links; multi-verse
+selection with shared-root tracing; all 31,102 verses including the disputed
+sixteen; inflected forms as pages of their own, opening in place before you
+commit to one; roots and forms starred independently; and the library kept where
+each platform keeps an application's files.
 
-Form pages now carry their own weight: the compound word broken into its parts,
-the transliteration, the grammar explained, renderings, sibling forms, a book
-distribution and the full concordance for that exact form, with the root's
-definition on the card that leads up to it.
-
----
+Recent work has been as much about arrangement as about data: the verses now sit
+where a reader will meet them rather than below the outbound links, the
+interface speaks to the reader instead of to whoever wrote it, and the headword
+an outbound link will open at is named rather than assumed.
 
 ---
 
@@ -136,6 +137,15 @@ source, so this probably means an external link rather than bundled audio.
 
 **Anything that phones home.** No analytics, no sync service, no account. The
 app runs on your machine and your notes stay your files.
+
+**A settings screen for the library path.** This was started and deliberately
+pulled back out. A form that writes to a filesystem path of the visitor's
+choosing needs traversal guards, symlink resolution, a denylist of system
+directories and CSRF handling — a great deal of defending against a problem the
+app can simply not have. The library goes where the platform keeps such files,
+and `BIBLEROOT_LIBRARY_DIR` covers the rare case, set by whoever launches the
+process and unreachable from a browser. Many of the people who will use this are
+not technical; the safe default matters more than the choice.
 
 **Commentary text in bulk.** Modern commentary is under copyright, and
 public-domain commentary is better served elsewhere. The external links already
