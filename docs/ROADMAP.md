@@ -54,7 +54,7 @@ scattered case; this is the contiguous one.
 ### Study trail
 
 A list of the verses and terms you have opened, in order. One append-only file
-under `data/library/`, in keeping with the rest.
+in the library folder, in keeping with the rest.
 
 ---
 

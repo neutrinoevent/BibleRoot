@@ -96,9 +96,15 @@ export default function AboutPage() {
 
       <h2 className="mt-10 font-serif text-xl">Your files</h2>
       <p className="mt-3 leading-relaxed text-ink-soft">
-        Saved terms live in <code>data/library/terms/</code> and notes in{" "}
-        <code>data/library/notes/</code>, one markdown file each with a small frontmatter header.
-        They are yours to grep, edit, sync or put under version control.
+        Your saved words and notes are kept in the folder each system sets aside for an
+        application&apos;s own files — <code>~/Library/Application Support/BibleRoot</code> on a
+        Mac, <code>%APPDATA%\BibleRoot</code> on Windows, and{" "}
+        <code>~/.local/share/BibleRoot</code> on Linux. The Library page shows the exact path.
+        They survive reinstalling the app and are picked up by whatever backs up your home folder.
+      </p>
+      <p className="mt-3 leading-relaxed text-ink-soft">
+        Each is a markdown file with a small frontmatter header, one per saved word or note. They
+        are yours to read, edit in any editor, search, sync or put under version control.
       </p>
 
       <h2 className="mt-10 font-serif text-xl">Who made this</h2>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 
 import { NotesPanel } from "@/components/NotesPanel";
-import { LIBRARY_DIR, listNotes, listTerms } from "@/lib/library";
+import { libraryRootForDisplay, listNotes, listTerms } from "@/lib/library";
 import { scriptOfLanguage } from "@/lib/render";
 import { wordHref } from "@/lib/refs";
 
@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 export default async function LibraryPage() {
   const [terms, notes] = await Promise.all([listTerms(), listNotes()]);
-  const relativeDir = LIBRARY_DIR.replace(`${process.cwd()}/`, "");
+  const relativeDir = libraryRootForDisplay();
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-12">

@@ -5,6 +5,7 @@ import fs from "node:fs";
 import fsp from "node:fs/promises";
 import path from "node:path";
 
+import { displayPath, resolveLibraryRoot } from "./library-location";
 import type { CustomResource, CustomResourceFile } from "./resources";
 
 /**
@@ -15,15 +16,24 @@ import type { CustomResource, CustomResourceFile } from "./resources";
  *   data/library/terms/H7451.md   — a saved word, plus notes about it
  *   data/library/notes/<id>.md    — a free note, optionally anchored to a verse
  */
-export const LIBRARY_DIR = path.join(process.cwd(), "data", "library");
-const TERMS_DIR = path.join(LIBRARY_DIR, "terms");
-const NOTES_DIR = path.join(LIBRARY_DIR, "notes");
+/** The library folder for this platform, created on first use. */
+export function libraryRoot(): string {
+  return resolveLibraryRoot();
+}
+
+/** The same path, shortened with ~ for showing on screen. */
+export function libraryRootForDisplay(): string {
+  return displayPath(resolveLibraryRoot());
+}
+
+const termsDirectory = () => path.join(resolveLibraryRoot(), "terms");
+const notesDirectory = () => path.join(resolveLibraryRoot(), "notes");
 
 type Frontmatter = Record<string, string | string[]>;
 
 function ensureDirs() {
-  fs.mkdirSync(TERMS_DIR, { recursive: true });
-  fs.mkdirSync(NOTES_DIR, { recursive: true });
+  fs.mkdirSync(termsDirectory(), { recursive: true });
+  fs.mkdirSync(notesDirectory(), { recursive: true });
 }
 
 function serializeValue(value: string | string[]): string {
@@ -109,11 +119,11 @@ function safeStrongs(strongs: string): string {
  */
 function termFile(strongs: string, form?: string | null, translit?: string | null): string {
   const base = safeStrongs(strongs);
-  if (!form) return path.join(TERMS_DIR, `${base}.md`);
+  if (!form) return path.join(termsDirectory(), `${base}.md`);
   const slug =
     slugifyAscii(translit ?? "") ||
     createHash("sha1").update(form.normalize("NFC")).digest("hex").slice(0, 10);
-  return path.join(TERMS_DIR, `${base}--${slug}.md`);
+  return path.join(termsDirectory(), `${base}--${slug}.md`);
 }
 
 function slugifyAscii(value: string): string {
@@ -146,14 +156,14 @@ async function findTermFile(strongs: string, form?: string | null): Promise<stri
   // The root's own file has a predictable name, so try it before reading the
   // whole directory.
   if (!wanted) {
-    const direct = path.join(TERMS_DIR, `${safeStrongs(strongs)}.md`);
+    const direct = path.join(termsDirectory(), `${safeStrongs(strongs)}.md`);
     const parsed = await readTermFile(direct);
     if (parsed && parsed.strongs === strongs && !parsed.form) return direct;
   }
 
-  for (const file of await fsp.readdir(TERMS_DIR)) {
+  for (const file of await fsp.readdir(termsDirectory())) {
     if (!file.endsWith(".md")) continue;
-    const full = path.join(TERMS_DIR, file);
+    const full = path.join(termsDirectory(), file);
     const parsed = await readTermFile(full);
     if (!parsed || parsed.strongs !== strongs) continue;
     if (sameForm(parsed.form, wanted)) return full;
@@ -215,11 +225,11 @@ export async function getTerm(strongs: string, form?: string | null): Promise<Sa
 
 export async function listTerms(): Promise<SavedTerm[]> {
   ensureDirs();
-  const files = await fsp.readdir(TERMS_DIR);
+  const files = await fsp.readdir(termsDirectory());
   const terms = await Promise.all(
     files
       .filter((file) => file.endsWith(".md"))
-      .map((file) => readTermFile(path.join(TERMS_DIR, file))),
+      .map((file) => readTermFile(path.join(termsDirectory(), file))),
   );
   return terms
     .filter((term): term is SavedTerm => term !== null && Boolean(term.strongs))
@@ -320,7 +330,7 @@ function slugify(value: string): string {
 
 function noteFile(id: string): string {
   const safe = slugify(id) || createHash("sha1").update(id).digest("hex").slice(0, 12);
-  return path.join(NOTES_DIR, `${safe}.md`);
+  return path.join(notesDirectory(), `${safe}.md`);
 }
 
 export async function getNote(id: string): Promise<Note | null> {
@@ -344,7 +354,7 @@ export async function getNote(id: string): Promise<Note | null> {
 
 export async function listNotes(): Promise<Note[]> {
   ensureDirs();
-  const files = await fsp.readdir(NOTES_DIR);
+  const files = await fsp.readdir(notesDirectory());
   const notes = await Promise.all(
     files.filter((file) => file.endsWith(".md")).map((file) => getNote(path.basename(file, ".md"))),
   );
@@ -459,7 +469,7 @@ export async function readCustomResources(): Promise<CustomResourceFile> {
 
 export async function libraryCounts(): Promise<{ terms: number; notes: number }> {
   ensureDirs();
-  const [terms, notes] = await Promise.all([fsp.readdir(TERMS_DIR), fsp.readdir(NOTES_DIR)]);
+  const [terms, notes] = await Promise.all([fsp.readdir(termsDirectory()), fsp.readdir(notesDirectory())]);
   return {
     terms: terms.filter((f) => f.endsWith(".md")).length,
     notes: notes.filter((f) => f.endsWith(".md")).length,

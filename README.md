@@ -100,9 +100,22 @@ marked *yours*.
 Saved terms and notes are markdown with a small frontmatter header, one file
 each:
 
+Saved words and notes live where each system keeps an application's own files:
+
+| | |
+| --- | --- |
+| macOS | `~/Library/Application Support/BibleRoot` |
+| Windows | `%APPDATA%\BibleRoot` |
+| Linux | `$XDG_DATA_HOME/BibleRoot`, or `~/.local/share/BibleRoot` |
+
+The Library page shows the exact path. Set `BIBLEROOT_LIBRARY_DIR` to an
+absolute path to override it — there is deliberately no way to change it from
+the interface.
+
 ```
-data/library/
+<library>/
   terms/H7451.md                          # a saved word, plus your notes on it
+  terms/H1952--me-ho-w-ne-ka.md           # a saved form of a word
   notes/2026-08-03-proverbs-20-22.md      # a note, anchored to a verse or a term
 ```
 
