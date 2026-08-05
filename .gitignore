@@ -55,4 +55,6 @@ next-env.d.ts
 /copy-archive/
 
 # Working notes for whoever maintains this. Local only.
+/CLAUDE.md
 /docs/HANDOFF.md
+/docs/WORKLOG.md
