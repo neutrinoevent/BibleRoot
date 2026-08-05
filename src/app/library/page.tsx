@@ -3,6 +3,7 @@ import Link from "next/link";
 import { NotesPanel } from "@/components/NotesPanel";
 import { LIBRARY_DIR, listNotes, listTerms } from "@/lib/library";
 import { scriptOfLanguage } from "@/lib/render";
+import { wordHref } from "@/lib/refs";
 
 export const metadata = { title: "Library — BibleRoot" };
 export const dynamic = "force-dynamic";
@@ -21,7 +22,7 @@ export default async function LibraryPage() {
       </p>
 
       <section className="mt-10">
-        <h2 className="font-serif text-lg">Saved terms</h2>
+        <h2 className="font-serif text-lg">Saved words and forms</h2>
         {terms.length === 0 ? (
           <p className="mt-2 text-sm text-ink-faint">
             Save a word from any of its pages and it will gather here.
@@ -33,7 +34,7 @@ export default async function LibraryPage() {
               return (
                 <li key={term.strongs}>
                   <Link
-                    href={`/term/${term.strongs}`}
+                    href={wordHref(term.strongs, term.form)}
                     className="block h-full rounded-xl border border-rule bg-paper-raised p-4 transition-colors hover:border-rule-strong"
                   >
                     <div className="flex items-baseline justify-between gap-2">
@@ -41,10 +42,22 @@ export default async function LibraryPage() {
                         className={`${script === "hebrew" ? "font-hebrew text-hebrew" : "font-greek text-greek"} text-2xl`}
                         dir={script === "hebrew" ? "rtl" : "ltr"}
                       >
-                        {term.lemma ?? term.strongs}
+                        {term.form ?? term.lemma ?? term.strongs}
                       </span>
                       <span className="font-mono text-[10px] text-ink-faint">{term.strongs}</span>
                     </div>
+                    {term.form && (
+                      <p className="mt-0.5 text-xs text-ink-faint">
+                        one form of{" "}
+                        <span
+                          className={script === "hebrew" ? "font-hebrew" : "font-greek"}
+                          dir={script === "hebrew" ? "rtl" : "ltr"}
+                        >
+                          {term.lemma}
+                        </span>
+                        {term.parsing ? ` · ${term.parsing}` : ""}
+                      </p>
+                    )}
                     {term.translit && (
                       <p className="mt-1 font-serif text-sm italic text-ink-soft">
                         {term.translit}

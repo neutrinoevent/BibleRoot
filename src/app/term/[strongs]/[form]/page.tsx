@@ -69,7 +69,7 @@ export default async function FormPage({ params, searchParams }: Props) {
   const maxCount = topBooks[0]?.c ?? 1;
 
   const [saved, notes, custom] = await Promise.all([
-    getTerm(strongs),
+    getTerm(strongs, form.original),
     notesForStrongs(strongs),
     readCustomResources(),
   ]);
@@ -116,8 +116,10 @@ export default async function FormPage({ params, searchParams }: Props) {
           initiallySaved={saved !== null}
           term={{
             strongs: entry.id,
+            form: form.original,
+            parsing: form.parsing_long ?? form.parsing,
             lemma: entry.lemma,
-            translit: entry.translit,
+            translit: form.translit ?? entry.translit,
             gloss: entry.gloss,
             language: entry.language,
           }}

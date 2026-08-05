@@ -17,13 +17,17 @@ function refresh(paths: string[]) {
 }
 
 export async function toggleTermAction(input: SaveTermInput): Promise<{ saved: boolean }> {
-  const alreadySaved = await isTermSaved(input.strongs);
+  // A root and any of its forms are separate entries, so the form decides which
+  // one this toggles.
+  const form = input.form ?? null;
+  const alreadySaved = await isTermSaved(input.strongs, form);
   if (alreadySaved) {
-    await removeTerm(input.strongs);
+    await removeTerm(input.strongs, form);
   } else {
     await saveTerm(input);
   }
   refresh([`/term/${input.strongs}`, "/library", "/"]);
+  if (form) revalidatePath(`/term/${input.strongs}/${encodeURIComponent(form)}`);
   return { saved: !alreadySaved };
 }
 

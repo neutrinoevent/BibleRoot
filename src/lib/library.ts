@@ -76,6 +76,13 @@ function list(value: string | string[] | undefined): string[] {
 
 export interface SavedTerm {
   strongs: string;
+  /**
+   * The exact inflected form, when the reader saved a particular shape of the
+   * word rather than the word itself. A root and any number of its forms can be
+   * saved side by side; they are separate entries.
+   */
+  form: string | null;
+  parsing: string | null;
   lemma: string | null;
   translit: string | null;
   gloss: string | null;
@@ -88,18 +95,102 @@ export interface SavedTerm {
   updatedAt: string;
 }
 
-/** Strong's ids are already filename-safe, but never trust them blindly. */
-function termFile(strongs: string): string {
-  const safe = /^[HG]\d+$/.test(strongs) ? strongs : createHash("sha1").update(strongs).digest("hex");
-  return path.join(TERMS_DIR, `${safe}.md`);
+function safeStrongs(strongs: string): string {
+  return /^[HG]\d+$/.test(strongs)
+    ? strongs
+    : createHash("sha1").update(strongs).digest("hex").slice(0, 12);
 }
 
-export async function getTerm(strongs: string): Promise<SavedTerm | null> {
+/**
+ * A root is filed under its Strong's number; a form adds its transliteration so
+ * the filename still says what it holds — `H1952--me-ho-w-ne-ka.md`. Hebrew in
+ * a filename would be at the mercy of how the filesystem normalises it, so the
+ * exact form lives in the frontmatter and the name stays ASCII.
+ */
+function termFile(strongs: string, form?: string | null, translit?: string | null): string {
+  const base = safeStrongs(strongs);
+  if (!form) return path.join(TERMS_DIR, `${base}.md`);
+  const slug =
+    slugifyAscii(translit ?? "") ||
+    createHash("sha1").update(form.normalize("NFC")).digest("hex").slice(0, 10);
+  return path.join(TERMS_DIR, `${base}--${slug}.md`);
+}
+
+function slugifyAscii(value: string): string {
+  return value
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "")
+    .slice(0, 40);
+}
+
+const sameForm = (a: string | null | undefined, b: string | null | undefined) =>
+  (a ?? "").normalize("NFC") === (b ?? "").normalize("NFC");
+
+/**
+ * Finds the entry for a particular root or form.
+ *
+ * Matching is on what a file *contains* — its Strong's number and its form —
+ * never on what it is called. The filename is a convenience for reading the
+ * directory; two forms could slug alike, a file could be renamed by hand, and
+ * an entry saved before forms existed carries no form at all. A root and each
+ * of its forms are wholly separate entries, so starring one must never be read
+ * as starring another.
+ */
+async function findTermFile(strongs: string, form?: string | null): Promise<string | null> {
+  ensureDirs();
+  const wanted = form ?? null;
+
+  // The root's own file has a predictable name, so try it before reading the
+  // whole directory.
+  if (!wanted) {
+    const direct = path.join(TERMS_DIR, `${safeStrongs(strongs)}.md`);
+    const parsed = await readTermFile(direct);
+    if (parsed && parsed.strongs === strongs && !parsed.form) return direct;
+  }
+
+  for (const file of await fsp.readdir(TERMS_DIR)) {
+    if (!file.endsWith(".md")) continue;
+    const full = path.join(TERMS_DIR, file);
+    const parsed = await readTermFile(full);
+    if (!parsed || parsed.strongs !== strongs) continue;
+    if (sameForm(parsed.form, wanted)) return full;
+  }
+  return null;
+}
+
+/**
+ * Where a new entry should be written. Two forms of one root can transliterate
+ * alike, so a name already holding a different form is stepped past rather than
+ * overwritten.
+ */
+async function allocateTermFile(
+  strongs: string,
+  form: string | null,
+  translit: string | null,
+): Promise<string> {
+  const first = termFile(strongs, form, translit);
+  if (!form) return first;
+
+  for (let attempt = 0; attempt < 50; attempt += 1) {
+    const candidate =
+      attempt === 0 ? first : termFile(strongs, form, `${translit ?? "form"}-${attempt + 1}`);
+    const parsed = await readTermFile(candidate);
+    if (!parsed || sameForm(parsed.form, form)) return candidate;
+  }
+  return termFile(strongs, form, createHash("sha1").update(form).digest("hex").slice(0, 10));
+}
+
+async function readTermFile(file: string): Promise<SavedTerm | null> {
   try {
-    const raw = await fsp.readFile(termFile(strongs), "utf8");
+    const raw = await fsp.readFile(file, "utf8");
     const { frontmatter, body } = parse(raw);
     return {
-      strongs: str(frontmatter.strongs) ?? strongs,
+      strongs: str(frontmatter.strongs) ?? "",
+      form: str(frontmatter.form) ?? null,
+      parsing: str(frontmatter.parsing) ?? null,
       lemma: str(frontmatter.lemma) ?? null,
       translit: str(frontmatter.translit) ?? null,
       gloss: str(frontmatter.gloss) ?? null,
@@ -115,19 +206,31 @@ export async function getTerm(strongs: string): Promise<SavedTerm | null> {
   }
 }
 
+export async function getTerm(strongs: string, form?: string | null): Promise<SavedTerm | null> {
+  const file = await findTermFile(strongs, form ?? null);
+  if (!file) return null;
+  const term = await readTermFile(file);
+  return term ? { ...term, strongs: term.strongs || strongs } : null;
+}
+
 export async function listTerms(): Promise<SavedTerm[]> {
   ensureDirs();
   const files = await fsp.readdir(TERMS_DIR);
   const terms = await Promise.all(
-    files.filter((file) => file.endsWith(".md")).map((file) => getTerm(path.basename(file, ".md"))),
+    files
+      .filter((file) => file.endsWith(".md"))
+      .map((file) => readTermFile(path.join(TERMS_DIR, file))),
   );
   return terms
-    .filter((term): term is SavedTerm => term !== null)
+    .filter((term): term is SavedTerm => term !== null && Boolean(term.strongs))
     .sort((a, b) => (b.savedAt ?? "").localeCompare(a.savedAt ?? ""));
 }
 
 export interface SaveTermInput {
   strongs: string;
+  /** Present when saving one inflected form rather than the word itself. */
+  form?: string | null;
+  parsing?: string | null;
   lemma?: string | null;
   translit?: string | null;
   gloss?: string | null;
@@ -139,11 +242,14 @@ export interface SaveTermInput {
 
 export async function saveTerm(input: SaveTermInput): Promise<SavedTerm> {
   ensureDirs();
-  const existing = await getTerm(input.strongs);
+  const form = input.form ?? null;
+  const existing = await getTerm(input.strongs, form);
   const now = new Date().toISOString();
 
   const term: SavedTerm = {
     strongs: input.strongs,
+    form,
+    parsing: input.parsing ?? existing?.parsing ?? null,
     lemma: input.lemma ?? existing?.lemma ?? null,
     translit: input.translit ?? existing?.translit ?? null,
     gloss: input.gloss ?? existing?.gloss ?? null,
@@ -155,11 +261,17 @@ export async function saveTerm(input: SaveTermInput): Promise<SavedTerm> {
     updatedAt: now,
   };
 
+  const file =
+    (await findTermFile(term.strongs, form)) ??
+    (await allocateTermFile(term.strongs, form, term.translit));
+
   await fsp.writeFile(
-    termFile(term.strongs),
+    file,
     serialize(
       {
         strongs: term.strongs,
+        form: term.form ?? "",
+        parsing: term.parsing ?? "",
         lemma: term.lemma ?? "",
         translit: term.translit ?? "",
         gloss: term.gloss ?? "",
@@ -176,12 +288,13 @@ export async function saveTerm(input: SaveTermInput): Promise<SavedTerm> {
   return term;
 }
 
-export async function removeTerm(strongs: string): Promise<void> {
-  await fsp.rm(termFile(strongs), { force: true });
+export async function removeTerm(strongs: string, form?: string | null): Promise<void> {
+  const file = await findTermFile(strongs, form ?? null);
+  if (file) await fsp.rm(file, { force: true });
 }
 
-export async function isTermSaved(strongs: string): Promise<boolean> {
-  return (await getTerm(strongs)) !== null;
+export async function isTermSaved(strongs: string, form?: string | null): Promise<boolean> {
+  return (await getTerm(strongs, form)) !== null;
 }
 
 /* ------------------------------------------------------------------ notes */

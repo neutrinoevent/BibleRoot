@@ -12,6 +12,8 @@ interface Props {
 }
 
 export function SaveTermButton({ term, initiallySaved }: Props) {
+  // Saving a form and saving its root are independent; the label says which.
+  const isForm = Boolean(term.form);
   const router = useRouter();
   const [saved, setSaved] = useState(initiallySaved);
   const [pending, startTransition] = useTransition();
@@ -36,7 +38,13 @@ export function SaveTermButton({ term, initiallySaved }: Props) {
           : "border-rule-strong bg-paper-raised text-ink-soft hover:text-ink"
       }`}
     >
-      {saved ? "★ Saved to library" : "☆ Save this term"}
+      {saved
+        ? isForm
+          ? "★ This form is saved"
+          : "★ This word is saved"
+        : isForm
+          ? "☆ Save this form"
+          : "☆ Save this word"}
     </button>
   );
 }
