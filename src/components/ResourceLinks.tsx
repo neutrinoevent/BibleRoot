@@ -3,7 +3,8 @@ import type { ResourceLink } from "@/lib/resources";
 interface Props {
   links: ResourceLink[];
   heading: string;
-  blurb: string;
+  /** Rich content, so a headword can be shown in its own script. */
+  blurb: React.ReactNode;
 }
 
 /** Deep links out to the standard scholarly tools, opened in a new tab. */

@@ -315,7 +315,28 @@ export default async function FormPage({ params, searchParams }: Props) {
       <ResourceLinks
         links={links}
         heading="Take it further"
-        blurb="Other resources for this word. They are arranged by dictionary form, so each opens at the headword."
+        blurb={
+          <>
+            Other resources for this word. They are arranged by dictionary form, so each opens at
+            the headword
+            {entry.lemma && (
+              <>
+                {" ("}
+                <span
+                  // The same colour the script is set in everywhere else, so the
+                  // headword reads as the word it is rather than as a link.
+                  className={scriptClass}
+                  dir={dir}
+                  lang={isGreek ? "el" : "he"}
+                >
+                  {entry.lemma}
+                </span>
+                {")"}
+              </>
+            )}
+            .
+          </>
+        }
       />
 
       <section className="mt-12">
