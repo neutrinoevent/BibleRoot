@@ -134,7 +134,7 @@ export function resolveLibraryRoot(): string {
   }
 }
 
-/** `~/Library/…` rather than `an account's Library folder` when shown on screen. */
+/** Shows the home directory as `~` on screen, so no one's account name appears. */
 export function displayPath(target: string): string {
   const home = homeDirectory();
   if (target === home) return "~";

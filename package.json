@@ -7,7 +7,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "build:data": "node scripts/build-data.ts"
+    "build:data": "node scripts/build-data.ts",
+    "audit:leaks": "node scripts/audit-leaks.ts"
   },
   "dependencies": {
     "next": "16.2.12",
