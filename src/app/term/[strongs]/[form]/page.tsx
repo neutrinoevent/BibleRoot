@@ -24,10 +24,25 @@ import { applyCustomTermResources, termResources } from "@/lib/resources";
 
 interface Props {
   params: Promise<{ strongs: string; form: string }>;
-  searchParams: Promise<{ show?: string }>;
+  searchParams: Promise<{ show?: string; as?: string | string[] }>;
 }
 
 const PAGE_SIZE = 40;
+
+/** A repeated query parameter arrives as a string, a list, or not at all. */
+function asArray(value: string | string[] | undefined): string[] {
+  if (value === undefined) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+/** Links that carry the current filter, so choosing a wording never loses the rest. */
+function formHref(state: { as: string[]; show?: number }): string {
+  const query = new URLSearchParams();
+  for (const wording of state.as) query.append("as", wording);
+  if (state.show) query.set("show", String(state.show));
+  const search = query.toString();
+  return `${search ? `?${search}` : ""}#occurrences`;
+}
 
 export const dynamic = "force-dynamic";
 
@@ -45,7 +60,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
  */
 export default async function FormPage({ params, searchParams }: Props) {
   const { strongs: rawStrongs, form: rawForm } = await params;
-  const { show } = await searchParams;
+  const { show, as } = await searchParams;
 
   const strongs = rawStrongs.toUpperCase();
   const original = decodeURIComponent(rawForm);
@@ -55,10 +70,24 @@ export default async function FormPage({ params, searchParams }: Props) {
   const form = getForm(strongs, original);
   if (!entry || !form) notFound();
 
-  const limit = Math.min(Number(show) || PAGE_SIZE, 1000);
-  const total = countFormOccurrences(strongs, form.original);
-  const occurrences = getFormOccurrences(strongs, form.original, limit);
   const renderings = getRenderings(strongs, form.original);
+
+  // Only wordings this form actually has are honoured. A stray or stale one in
+  // the address is dropped rather than matched, so a bad link shows everything
+  // instead of silently showing nothing.
+  const offered = new Set(renderings.map((rendering) => rendering.english));
+  const chosen = [...new Set(asArray(as))].filter((wording) => offered.has(wording));
+
+  // Every occurrence, always, unless the reader has asked to narrow it.
+  const everything = countFormOccurrences(strongs, form.original);
+  const total = chosen.length > 0 ? countFormOccurrences(strongs, form.original, chosen) : everything;
+  const limit = Math.max(PAGE_SIZE, Math.min(Number(show) || PAGE_SIZE, total));
+  const occurrences = getFormOccurrences(
+    strongs,
+    form.original,
+    limit,
+    chosen.length > 0 ? chosen : undefined,
+  );
   const siblings = getInflectedForms(strongs).filter(
     (item) => item.original.toLowerCase() !== form.original.toLowerCase(),
   );
@@ -217,30 +246,102 @@ export default async function FormPage({ params, searchParams }: Props) {
             Another translation would choose differently, and the shades of meaning the word can
             carry are wider than any one version shows.
           </p>
+          <p className="mt-2 text-sm text-ink-faint">
+            Choose one to see only those verses, and choose several to see them together. The list
+            below starts with all of them.
+          </p>
           <ul className="mt-3 flex flex-wrap gap-2">
-            {renderings.map((rendering) => (
-              <li
-                key={rendering.english}
-                className="rounded-full border border-rule bg-paper-raised px-3 py-1 text-sm text-ink"
-              >
-                {rendering.english}
-                <span className="ml-2 text-xs text-ink-faint">
-                  {rendering.c}
-                  {rendering.c === 1 ? " time" : " times"}
-                </span>
-              </li>
-            ))}
+            {renderings.map((rendering) => {
+              const picked = chosen.includes(rendering.english);
+              const next = picked
+                ? chosen.filter((wording) => wording !== rendering.english)
+                : [...chosen, rendering.english];
+              return (
+                <li key={rendering.english}>
+                  <Link
+                    href={formHref({ as: next })}
+                    aria-pressed={picked}
+                    title={
+                      picked
+                        ? `Stop showing only “${rendering.english}”`
+                        : `Show only the verses rendered “${rendering.english}”`
+                    }
+                    className={`flex items-baseline gap-2 rounded-full border px-3 py-1 text-sm transition-colors ${
+                      picked
+                        ? "border-accent bg-paper-raised text-accent"
+                        : "border-rule bg-paper-raised text-ink hover:border-rule-strong"
+                    }`}
+                  >
+                    <span>{rendering.english}</span>
+                    <span className={picked ? "text-xs text-accent" : "text-xs text-ink-faint"}>
+                      {rendering.c}
+                      {rendering.c === 1 ? " time" : " times"}
+                    </span>
+                    {picked && (
+                      <span aria-hidden className="text-xs text-accent">
+                        ×
+                      </span>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
           </ul>
+          {chosen.length > 0 && (
+            <p className="mt-3 text-sm text-ink-soft">
+              Showing only {chosen.map((wording) => `“${wording}”`).join(" and ")}.{" "}
+              <Link href={formHref({ as: [] })} className="text-accent hover:underline">
+                Show all {everything.toLocaleString()} again
+              </Link>
+            </p>
+          )}
         </section>
       )}
 
+      <ResourceLinks
+        links={links}
+        heading="Take it further"
+        blurb={
+          <>
+            Other resources for this word. They are arranged by dictionary form, so each opens at
+            the headword
+            {entry.lemma && (
+              <>
+                {" ("}
+                <span
+                  // The same colour the script is set in everywhere else, so the
+                  // headword reads as the word it is rather than as a link.
+                  className={scriptClass}
+                  dir={dir}
+                  lang={isGreek ? "el" : "he"}
+                >
+                  {entry.lemma}
+                </span>
+                {")"}
+              </>
+            )}
+            .
+          </>
+        }
+      />
+
       <section id="occurrences" className="mt-10 scroll-mt-20">
         <h2 className="font-serif text-lg">
-          Every occurrence of this form{" "}
+          {chosen.length > 0 ? "The occurrences you chose" : "Every occurrence of this form"}{" "}
           <span className="text-sm font-normal text-ink-faint">
             (showing {Math.min(limit, total).toLocaleString()} of {total.toLocaleString()})
           </span>
         </h2>
+        {/* Never let a filter make verses disappear without saying so. */}
+        {chosen.length > 0 && everything > total && (
+          <p className="mt-1 text-sm text-ink-faint">
+            {(everything - total).toLocaleString()} further occurrence
+            {everything - total === 1 ? " is" : "s are"} set aside by that choice.{" "}
+            <Link href={formHref({ as: [] })} className="text-accent hover:underline">
+              Show all {everything.toLocaleString()}
+            </Link>
+          </p>
+        )}
         <ul className="mt-3 divide-y divide-rule border-y border-rule">
           {occurrences.map((occurrence, index) => (
             <li key={`${occurrence.ref}-${index}`} className="py-3">
@@ -267,10 +368,10 @@ export default async function FormPage({ params, searchParams }: Props) {
         </ul>
         {limit < total && (
           <Link
-            href={`?show=${Math.min(limit + 200, total)}`}
+            href={formHref({ as: chosen, show: limit + PAGE_SIZE * 5 })}
             className="mt-4 inline-block text-sm text-accent hover:underline"
           >
-            Show more →
+            Show {Math.min(PAGE_SIZE * 5, total - limit).toLocaleString()} more →
           </Link>
         )}
       </section>
@@ -320,32 +421,6 @@ export default async function FormPage({ params, searchParams }: Props) {
         </section>
       )}
 
-      <ResourceLinks
-        links={links}
-        heading="Take it further"
-        blurb={
-          <>
-            Other resources for this word. They are arranged by dictionary form, so each opens at
-            the headword
-            {entry.lemma && (
-              <>
-                {" ("}
-                <span
-                  // The same colour the script is set in everywhere else, so the
-                  // headword reads as the word it is rather than as a link.
-                  className={scriptClass}
-                  dir={dir}
-                  lang={isGreek ? "el" : "he"}
-                >
-                  {entry.lemma}
-                </span>
-                {")"}
-              </>
-            )}
-            .
-          </>
-        }
-      />
 
       <section className="mt-12">
         <NotesPanel

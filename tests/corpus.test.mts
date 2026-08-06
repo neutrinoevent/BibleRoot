@@ -126,6 +126,40 @@ describe("the Septuagint bridge", { skip: missing && "no corpus" }, () => {
   });
 });
 
+describe("filtering occurrences by wording", { skip: missing && "no corpus" }, () => {
+  test("the SQL that filters agrees with the TypeScript that labels", () => {
+    // The bubbles are built in TypeScript by stripping supplied-word brackets,
+    // and the filter matches in SQL. If the two ever disagree, choosing a
+    // wording would hide verses that carry it, which is the one outcome this
+    // feature must never produce. Checked against every wording in the corpus.
+    const values = rows<{ english: string; normalised: string }>(
+      `SELECT DISTINCT english,
+              TRIM(REPLACE(REPLACE(REPLACE(REPLACE(english, '[', ''), ']', ''), '{', ''), '}', '')) AS normalised
+         FROM words WHERE english IS NOT NULL`,
+    );
+    assert.ok(values.length > 100000, "expected the whole corpus of wordings");
+    const disagreed = values.filter(
+      (row) => row.english.replace(/[[\]{}]/g, "").trim() !== row.normalised,
+    );
+    assert.deepEqual(disagreed, []);
+  });
+
+  test("the wordings offered account for every occurrence that has one", () => {
+    // Selecting every bubble has to bring back everything, so the counts behind
+    // the bubbles must sum to the occurrences that carry a wording at all.
+    const form = { strongs: "G18", original: "ἀγαθὸν" };
+    const total = one("SELECT COUNT(*) FROM words WHERE strongs = ? AND original = ? COLLATE NOCASE", [
+      form.strongs,
+      form.original,
+    ]);
+    const withWording = one(
+      "SELECT COUNT(*) FROM words WHERE strongs = ? AND original = ? COLLATE NOCASE AND english IS NOT NULL AND TRIM(english) != ''",
+      [form.strongs, form.original],
+    );
+    assert.equal(withWording, total, "a wordless occurrence would have no bubble to reach it by");
+  });
+});
+
 describe("search", { skip: missing && "no corpus" }, () => {
   test("finds a phrase that is certainly there", () => {
     const hits = rows("SELECT rowid FROM verses_fts WHERE verses_fts MATCH 'lamp AND feet' LIMIT 5");

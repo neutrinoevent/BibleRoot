@@ -71,6 +71,88 @@ describe("every occurrence really is every occurrence", () => {
   });
 });
 
+describe("choosing a wording never loses a verse", () => {
+  const FORM = `/term/G18/${encodeURIComponent("ἀγαθὸν")}`;
+  const WORDINGS = ["good", "right", "good thing", "anything good", "a good", "is good", "A good"];
+  const query = (chosen: string[]) =>
+    chosen.length === 0 ? FORM : `${FORM}?${chosen.map((w) => `as=${encodeURIComponent(w)}`).join("&")}`;
+  /** How many the page says it has set aside; nothing hidden reports as zero. */
+  const setAside = (text: string): number => {
+    const match = /([\d,]+) further occurrence/.exec(text);
+    return match ? Number(match[1].replace(/,/g, "")) : 0;
+  };
+
+  test("with nothing chosen, everything is there", async (t) => {
+    if (!serving) return t.skip("nothing serving");
+    const text = await textOf(query([]));
+    assert.equal(setAside(text), 0);
+    assert.equal(showing(text).shown, showing(text).total);
+  });
+
+  test("choosing more wordings shows more verses, never fewer", async (t) => {
+    if (!serving) return t.skip("nothing serving");
+    const one = showing(await textOf(query(["good"]))).total;
+    const two = showing(await textOf(query(["good", "right"]))).total;
+    const three = showing(await textOf(query(["good", "right", "good thing"]))).total;
+    assert.ok(two > one, `adding a wording reduced the list: ${one} then ${two}`);
+    assert.ok(three > two, `adding a wording reduced the list: ${two} then ${three}`);
+  });
+
+  test("choosing every wording brings back every occurrence", async (t) => {
+    if (!serving) return t.skip("nothing serving");
+    const all = showing(await textOf(query([]))).total;
+    const text = await textOf(query(WORDINGS));
+    assert.equal(showing(text).total, all, "some occurrence could not be reached by any wording");
+    assert.equal(setAside(text), 0);
+  });
+
+  test("what a filter sets aside is stated, and reversible", async (t) => {
+    if (!serving) return t.skip("nothing serving");
+    const all = showing(await textOf(query([]))).total;
+    const text = await textOf(query(["good"]));
+    const { total } = showing(text);
+    assert.equal(setAside(text), all - total, "the page did not account for the difference");
+    assert.match(text, /Show all/, "no way back to the whole list");
+  });
+
+  test("a wording that does not exist shows everything rather than nothing", async (t) => {
+    if (!serving) return t.skip("nothing serving");
+    const all = showing(await textOf(query([]))).total;
+    for (const bogus of [["NOTAWORDING"], [""], ["good'; DROP TABLE words--"]]) {
+      assert.equal(showing(await textOf(query(bogus))).total, all, `${bogus[0]} hid verses`);
+    }
+  });
+
+  test("a bad wording alongside a real one leaves the real one working", async (t) => {
+    if (!serving) return t.skip("nothing serving");
+    const good = showing(await textOf(query(["good"]))).total;
+    assert.equal(showing(await textOf(query(["NOPE", "good"]))).total, good);
+    assert.equal(showing(await textOf(query(["good", "good"]))).total, good);
+  });
+
+  test("the form list also goes past the old thousand-item ceiling", async (t) => {
+    if (!serving) return t.skip("nothing serving");
+    // καὶ occurs 8,038 times in this one form; the form page capped at 1,000 too.
+    const { shown } = showing(await textOf(`/term/G2532/${encodeURIComponent("καὶ")}?show=1500`));
+    assert.equal(shown, 1500);
+  });
+});
+
+describe("the deeper-dive links are reachable", () => {
+  test("they come before the occurrence list, not after it", async (t) => {
+    if (!serving) return t.skip("nothing serving");
+    // Below a list that can run to 19,922 entries, nobody would ever meet them.
+    for (const path of ["/term/H2896", `/term/G18/${encodeURIComponent("ἀγαθὸν")}`]) {
+      const text = await textOf(path);
+      const links = text.indexOf("Take it further");
+      const occurrences = text.search(/Every occurrence|The occurrences you chose/);
+      assert.ok(links > 0, `${path} has no outbound links`);
+      assert.ok(occurrences > 0, `${path} has no occurrence list`);
+      assert.ok(links < occurrences, `${path} still buries its links below the occurrences`);
+    }
+  });
+});
+
 describe("the particles have somewhere to live", () => {
   test("each of the eight serves its lexicon entry", async (t) => {
     if (!serving) return t.skip("nothing serving");

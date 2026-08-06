@@ -304,20 +304,37 @@ export function getForm(strongsId: string, original: string): InflectedForm | nu
 export const describeForm = getForm;
 
 /** Occurrences of one inflected form, rather than of the whole root. */
+/**
+ * The bracket-stripping `getRenderings` performs, written in SQL so that a
+ * wording offered as a filter and the wording matched against cannot drift
+ * apart. A drift here would quietly hide verses, so the tests check the two
+ * against each other across every distinct wording in the corpus.
+ */
+export const NORMALISED_ENGLISH_SQL =
+  "TRIM(REPLACE(REPLACE(REPLACE(REPLACE(w.english, '[', ''), ']', ''), '{', ''), '}', ''))";
+
+function renderingFilter(renderings?: string[]): { clause: string; params: string[] } {
+  if (!renderings || renderings.length === 0) return { clause: "", params: [] };
+  const slots = renderings.map(() => "?").join(", ");
+  return { clause: `AND ${NORMALISED_ENGLISH_SQL} IN (${slots})`, params: renderings };
+}
+
 export function getFormOccurrences(
   strongsId: string,
   original: string,
   limit: number,
+  renderings?: string[],
 ): Occurrence[] {
+  const { clause, params } = renderingFilter(renderings);
   return queryAll<Occurrence>(
     `SELECT v.ref, v.book_id, v.chapter, v.verse, v.text,
             w.english, w.original, w.translit, w.parsing
        FROM words w
        JOIN verses v ON v.id = w.verse_id
-      WHERE w.strongs = ? AND w.original = ? COLLATE NOCASE
+      WHERE w.strongs = ? AND w.original = ? COLLATE NOCASE ${clause}
       ORDER BY v.id, w.pos
       LIMIT ?`,
-    [strongsId, original, limit],
+    [strongsId, original, ...params, limit],
   );
 }
 
@@ -446,11 +463,17 @@ export function getFormSpread(
   );
 }
 
-export function countFormOccurrences(strongsId: string, original: string): number {
+export function countFormOccurrences(
+  strongsId: string,
+  original: string,
+  renderings?: string[],
+): number {
+  const { clause, params } = renderingFilter(renderings);
   return (
     queryOne<{ c: number }>(
-      "SELECT COUNT(*) AS c FROM words WHERE strongs = ? AND original = ? COLLATE NOCASE",
-      [strongsId, original],
+      `SELECT COUNT(*) AS c FROM words w
+        WHERE w.strongs = ? AND w.original = ? COLLATE NOCASE ${clause}`,
+      [strongsId, original, ...params],
     )?.c ?? 0
   );
 }

@@ -256,6 +256,12 @@ export default async function TermPage({ params, searchParams }: Props) {
         <Septuagint matches={septuagint} lemma={entry.lemma} direction="behind-greek" />
       )}
 
+      <ResourceLinks
+        links={links}
+        heading="Take it further"
+        blurb="Other trusted resources, each opening at this exact word."
+      />
+
       <section id="occurrences" className="mt-10 scroll-mt-20">
         <h2 className="font-serif text-lg">
           Every occurrence{" "}
@@ -372,11 +378,6 @@ export default async function TermPage({ params, searchParams }: Props) {
         />
       )}
 
-      <ResourceLinks
-        links={links}
-        heading="Take it further"
-        blurb="Other trusted resources, each opening at this exact word."
-      />
 
       <section className="mt-12">
         <NotesPanel

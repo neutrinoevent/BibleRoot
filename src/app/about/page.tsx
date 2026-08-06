@@ -79,7 +79,17 @@ export default function AboutPage() {
         links, marked <em>yours</em>.
       </p>
 
-      <h2 className="mt-10 font-serif text-xl">A note on the text</h2>
+              <p className="mt-4">
+          A word&apos;s page lists every place it is used, and a form&apos;s page lists every
+          place that exact shape appears. Where a list is long, it can be narrowed: on a
+          word&apos;s page by the book you want, and on a form&apos;s page by the wording the
+          translators chose. Choosing one wording shows those verses, choosing several shows
+          them together, and a chosen wording carries a small × to clear it. Nothing is ever
+          dropped quietly — the page says how many it has set aside and offers the whole list
+          back in one click.
+        </p>
+
+<h2 className="mt-10 font-serif text-xl">A note on the text</h2>
       <p className="mt-3 leading-relaxed text-ink-soft">
         Every verse is here — all 31,102. Sixteen of them are a special case: Matthew 17:21,
         18:11, 23:14, Mark 7:16, 9:44, 9:46, 11:26, 15:28, Luke 17:36, 23:17, John 5:4, Acts 8:37,

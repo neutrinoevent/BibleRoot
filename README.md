@@ -42,6 +42,16 @@ On a verse page:
   Aramaic running right to left. Select any word to open its root.
 - **Notes** — anchored to that verse.
 
+On a word or form page:
+
+- **Every occurrence** — the whole list, however long. Nothing is capped.
+- **Narrowing it** — a word's page can be limited to one book, a form's page to
+  the wordings the translators used. Choose several to see them together; each
+  chosen one carries a small × to clear it. The page always says how many it has
+  set aside, and offers the full list back in a click.
+- **Take it further** — the outbound links to the standard scholarly tools sit
+  above the occurrence list, so a long list never buries them.
+
 ### Studying several verses together
 
 In a chapter, **Select verses to study together** turns on checkboxes. Tick any
