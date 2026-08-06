@@ -198,13 +198,17 @@ export function FormExplorer({
                 <p className="mt-3 flex flex-wrap items-center gap-2 border-t border-rule pt-3">
                   <span className="text-xs uppercase tracking-wide text-ink-faint">Rendered</span>
                   {detail.renderings.map((rendering) => (
-                    <span
+                    // Opens the form's own page with this wording already
+                    // chosen, so the chips do the same thing in both places.
+                    <Link
                       key={rendering.english}
-                      className="rounded-full border border-rule px-2.5 py-0.5 text-sm text-ink"
+                      href={`${wordHref(strongs, detail.original)}?as=${encodeURIComponent(rendering.english)}#occurrences`}
+                      title={`See the verses rendered “${rendering.english}”`}
+                      className="rounded-full border border-rule px-2.5 py-0.5 text-sm text-ink transition-colors hover:border-rule-strong hover:text-accent"
                     >
                       {rendering.english}
                       <span className="ml-1.5 text-xs text-ink-faint">{rendering.c}</span>
-                    </span>
+                    </Link>
                   ))}
                 </p>
               )}
