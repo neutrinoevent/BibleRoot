@@ -29,10 +29,20 @@ import { applyCustomTermResources, termResources } from "@/lib/resources";
 
 interface Props {
   params: Promise<{ strongs: string }>;
-  searchParams: Promise<{ show?: string; form?: string }>;
+  searchParams: Promise<{ show?: string; form?: string; book?: string }>;
 }
 
 const PAGE_SIZE = 40;
+
+/** Keeps the form a reader arrived by, and their chosen book, across these links. */
+function occurrenceHref(state: { form?: string; book?: number; show?: number }): string {
+  const query = new URLSearchParams();
+  if (state.form) query.set("form", state.form);
+  if (state.book) query.set("book", String(state.book));
+  if (state.show) query.set("show", String(state.show));
+  const search = query.toString();
+  return `${search ? `?${search}` : ""}#occurrences`;
+}
 
 // Saved state and notes for the term are read from disk per request.
 export const dynamic = "force-dynamic";
@@ -46,17 +56,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function TermPage({ params, searchParams }: Props) {
   const { strongs: raw } = await params;
-  const { show, form } = await searchParams;
+  const { show, form, book } = await searchParams;
   const strongs = raw.toUpperCase();
 
   if (!/^[HG]\d+$/.test(strongs)) notFound();
   const entry = getStrongs(strongs);
   if (!entry) notFound();
 
-  const limit = Math.min(Number(show) || PAGE_SIZE, 1000);
-  const total = countOccurrences(strongs);
-  const occurrences = getOccurrences(strongs, limit);
   const spread = getOccurrenceSpread(strongs);
+
+  // A book to narrow to, honoured only if the word actually occurs there.
+  const inBook = spread.some((row) => row.book_id === Number(book)) ? Number(book) : undefined;
+
+  // Every occurrence means every one. The list grows a page at a time so the
+  // commonest words stay usable, and it stops only when the reader has them all.
+  const allTotal = countOccurrences(strongs);
+  const total = inBook ? countOccurrences(strongs, inBook) : allTotal;
+  const limit = Math.max(PAGE_SIZE, Math.min(Number(show) || PAGE_SIZE, total));
+  const occurrences = getOccurrences(strongs, limit, 0, inBook);
   const deepEntries = getDeepLexiconEntries(strongs);
   const forms = getInflectedForms(strongs);
   const septuagint =
@@ -243,9 +260,41 @@ export default async function TermPage({ params, searchParams }: Props) {
         <h2 className="font-serif text-lg">
           Every occurrence{" "}
           <span className="text-sm font-normal text-ink-faint">
-            (showing {Math.min(limit, total).toLocaleString()} of {total.toLocaleString()})
+            (showing {Math.min(limit, total).toLocaleString()} of {total.toLocaleString()}
+            {inBook ? ` in ${BOOKS_BY_ID.get(inBook)?.name}` : ""})
           </span>
         </h2>
+
+        {spread.length > 1 && (
+          <div className="mt-3 flex flex-wrap gap-1.5">
+            <Link
+              href={occurrenceHref({ form })}
+              className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                inBook
+                  ? "border-rule text-ink-soft hover:border-rule-strong"
+                  : "border-accent text-accent"
+              }`}
+            >
+              All {allTotal.toLocaleString()}
+            </Link>
+            {[...spread]
+              .sort((a, b) => b.c - a.c)
+              .map((row) => (
+                <Link
+                  key={row.book_id}
+                  href={occurrenceHref({ form, book: row.book_id })}
+                  className={`rounded-full border px-3 py-1 text-xs transition-colors ${
+                    inBook === row.book_id
+                      ? "border-accent text-accent"
+                      : "border-rule text-ink-soft hover:border-rule-strong"
+                  }`}
+                >
+                  {BOOKS_BY_ID.get(row.book_id)?.name}{" "}
+                  <span className="text-ink-faint">{row.c.toLocaleString()}</span>
+                </Link>
+              ))}
+          </div>
+        )}
         <ul className="mt-3 divide-y divide-rule border-y border-rule">
           {occurrences.map((occurrence, index) => (
             <li key={`${occurrence.ref}-${index}`} className="py-3">
@@ -278,10 +327,10 @@ export default async function TermPage({ params, searchParams }: Props) {
         </ul>
         {limit < total && (
           <Link
-            href={`?show=${Math.min(limit + 200, total)}`}
+            href={occurrenceHref({ form, book: inBook, show: limit + PAGE_SIZE * 5 })}
             className="mt-4 inline-block text-sm text-accent hover:underline"
           >
-            Show more →
+            Show {Math.min(PAGE_SIZE * 5, total - limit).toLocaleString()} more →
           </Link>
         )}
       </section>
