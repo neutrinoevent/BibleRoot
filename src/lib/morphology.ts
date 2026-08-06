@@ -249,42 +249,57 @@ export interface WordPart {
   form: string | null;
   label: string;
   meaning: string;
+  /** Set when Brown-Driver-Briggs treats this morpheme in its own right. */
+  particle?: string;
 }
 
 /** The inseparable prefixes, keyed by how the parsing names them. */
-const PREFIXES: Array<{ match: RegExp; form: string | null; label: string; meaning: string }> = [
+const PREFIXES: Array<{
+  match: RegExp;
+  form: string | null;
+  label: string;
+  meaning: string;
+  /** The letter Brown-Driver-Briggs files this particle under, where it has one. */
+  particle?: string;
+}> = [
   {
     match: /^Conjunctive waw/i,
+    particle: "c",
     form: "וְ",
     label: "Conjunctive waw",
     meaning: "“and”, joining this word to what came before. Hebrew narrative leans on it constantly.",
   },
   {
     match: /^Preposition-b/i,
+    particle: "b",
     form: "בְּ",
     label: "Preposition bet",
     meaning: "“in”, “at”, “by” or “with”, depending on what it governs.",
   },
   {
     match: /^Preposition-l/i,
+    particle: "l",
     form: "לְ",
     label: "Preposition lamed",
     meaning: "“to” or “for”, marking direction, purpose or possession.",
   },
   {
     match: /^Preposition-k/i,
+    particle: "k",
     form: "כְּ",
     label: "Preposition kaf",
     meaning: "“like” or “as”, drawing a comparison.",
   },
   {
     match: /^Preposition-m/i,
+    particle: "m",
     form: "מִן",
     label: "Preposition min",
     meaning: "“from” or “out of”, marking source, separation or cause.",
   },
   {
     match: /^Article/i,
+    particle: "d",
     form: "הַ",
     label: "Article",
     meaning: "“the”, making the word definite.",
@@ -303,6 +318,55 @@ const PREFIXES: Array<{ match: RegExp; form: string | null; label: string; meani
     meaning: "Attached to the front of the word rather than standing separately.",
   },
 ];
+
+/**
+ * The particles Brown-Driver-Briggs files under a letter instead of a Strong's
+ * number, keyed by that letter. They carry a great deal of Hebrew and appear on
+ * almost every page, yet a concordance built on Strong's numbers has nowhere to
+ * put them, so each one has a page of its own at `/particle/<letter>`.
+ */
+export const PARTICLE_NOTES: Record<string, { form: string; label: string; meaning: string }> = {
+  b: {
+    form: "בְּ",
+    label: "Preposition bet",
+    meaning: "“in”, “at”, “by” or “with”, depending on what it governs.",
+  },
+  l: {
+    form: "לְ",
+    label: "Preposition lamed",
+    meaning: "“to” or “for”, marking direction, purpose or possession.",
+  },
+  k: {
+    form: "כְּ",
+    label: "Preposition kaf",
+    meaning: "“like” or “as”, drawing a comparison.",
+  },
+  m: {
+    form: "מִן",
+    label: "Preposition min",
+    meaning: "“from” or “out of”, marking source, separation or cause.",
+  },
+  d: {
+    form: "הַ",
+    label: "Article",
+    meaning: "“the”, making the word definite.",
+  },
+  c: {
+    form: "וְ",
+    label: "Conjunctive waw",
+    meaning: "“and”, joining this word to what came before. Hebrew narrative leans on it constantly.",
+  },
+  i: {
+    form: "הֲ",
+    label: "Interrogative he",
+    meaning: "Turns what follows into a question, where English would reorder the words instead.",
+  },
+  s: {
+    form: "שֶׁ",
+    label: "Relative she",
+    meaning: "“who”, “which” or “that”, tying a clause to the word it describes.",
+  },
+};
 
 /** Pronominal endings, by the person and number the parsing names. */
 const SUFFIX_PRONOUNS: Array<{ match: RegExp; possessive: string; object: string }> = [
@@ -367,7 +431,13 @@ export function decomposeParsing(parsingLong: string | null): WordPart[] {
       for (const piece of segment.split(",").map((value) => value.trim())) {
         const prefix = PREFIXES.find((candidate) => candidate.match.test(piece));
         if (prefix) {
-          parts.push({ role: "prefix", form: prefix.form, label: prefix.label, meaning: prefix.meaning });
+          parts.push({
+            role: "prefix",
+            form: prefix.form,
+            label: prefix.label,
+            meaning: prefix.meaning,
+            particle: prefix.particle,
+          });
         }
       }
       return;

@@ -78,6 +78,43 @@ export function lexiconTitle(source: string): { title: string; attribution: stri
   return LEXICON_TITLES[source] ?? { title: source, attribution: "" };
 }
 
+/**
+ * The inseparable prefixes and particles — the article, the conjunctive waw, the
+ * prepositions bet, lamed, kaf and min, the interrogative he and the relative
+ * she. Strong's never numbered them, so the lexical index names them by letter
+ * and they are keyed here as `HB`, `HD` and so on rather than by a number they
+ * do not have.
+ */
+export interface Particle {
+  id: string;
+  letter: string;
+  headword: string | null;
+  citation: string | null;
+  html: string;
+}
+
+export function getParticle(letter: string): Particle | null {
+  if (!/^[a-z]$/i.test(letter)) return null;
+  const id = `H${letter.toUpperCase()}`;
+  const row = queryOne<{ headword: string | null; citation: string | null; html: string }>(
+    "SELECT headword, citation, html FROM lexicon_entries WHERE strongs = ? AND source = 'bdb'",
+    [id],
+  );
+  return row ? { id, letter: letter.toLowerCase(), ...row } : null;
+}
+
+export function listParticles(): Particle[] {
+  return queryAll<{ strongs: string; headword: string | null; citation: string | null; html: string }>(
+    "SELECT strongs, headword, citation, html FROM lexicon_entries WHERE strongs GLOB 'H[A-Z]' ORDER BY strongs",
+  ).map((row) => ({
+    id: row.strongs,
+    letter: row.strongs.slice(1).toLowerCase(),
+    headword: row.headword,
+    citation: row.citation,
+    html: row.html,
+  }));
+}
+
 /** Full scholarly entries — BDB for Hebrew, Abbott-Smith for Greek. */
 export function getDeepLexiconEntries(strongs: string): DeepLexiconEntry[] {
   return queryAll<DeepLexiconEntry>(
@@ -193,16 +230,23 @@ export function getStrongs(id: string): StrongsEntry | null {
 }
 
 /** Every other place the same lexical root is used — the concordance view. */
-export function getOccurrences(strongsId: string, limit: number, offset = 0): Occurrence[] {
+export function getOccurrences(
+  strongsId: string,
+  limit: number,
+  offset = 0,
+  bookId?: number,
+): Occurrence[] {
+  const inBook = bookId ? "AND v.book_id = ?" : "";
+  const params: Array<string | number> = bookId ? [strongsId, bookId] : [strongsId];
   return queryAll<Occurrence>(
     `SELECT v.ref, v.book_id, v.chapter, v.verse, v.text,
             w.english, w.original, w.translit, w.parsing
        FROM words w
        JOIN verses v ON v.id = w.verse_id
-      WHERE w.strongs = ?
+      WHERE w.strongs = ? ${inBook}
       ORDER BY v.id, w.pos
       LIMIT ? OFFSET ?`,
-    [strongsId, limit, offset],
+    [...params, limit, offset],
   );
 }
 
@@ -411,10 +455,20 @@ export function countFormOccurrences(strongsId: string, original: string): numbe
   );
 }
 
-export function countOccurrences(strongsId: string): number {
+export function countOccurrences(strongsId: string, bookId?: number): number {
+  if (!bookId) {
+    return (
+      queryOne<{ c: number }>("SELECT COUNT(*) AS c FROM words WHERE strongs = ?", [strongsId])
+        ?.c ?? 0
+    );
+  }
   return (
-    queryOne<{ c: number }>("SELECT COUNT(*) AS c FROM words WHERE strongs = ?", [strongsId])
-      ?.c ?? 0
+    queryOne<{ c: number }>(
+      `SELECT COUNT(*) AS c
+         FROM words w JOIN verses v ON v.id = w.verse_id
+        WHERE w.strongs = ? AND v.book_id = ?`,
+      [strongsId, bookId],
+    )?.c ?? 0
   );
 }
 

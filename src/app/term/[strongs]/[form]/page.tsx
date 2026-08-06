@@ -180,6 +180,14 @@ export default async function FormPage({ params, searchParams }: Props) {
                   <span className="mt-1 block text-sm leading-relaxed text-ink-soft">
                     {part.meaning}
                   </span>
+                  {part.particle && (
+                    <Link
+                      href={`/particle/${part.particle}`}
+                      className="mt-1 inline-block text-xs text-accent hover:underline"
+                    >
+                      Brown-Driver-Briggs on {part.label.toLowerCase()} →
+                    </Link>
+                  )}
                 </span>
               </li>
             ))}

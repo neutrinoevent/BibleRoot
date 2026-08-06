@@ -200,6 +200,28 @@ interface BdbLink {
   twot: string | null;
 }
 
+/**
+ * The lexical index numbers most entries and names eight of them with a single
+ * letter: the inseparable prefixes and particles, which Strong's never gave a
+ * number of their own. Running those through `Number()` produced `HNaN` for all
+ * eight, so seven were dropped as duplicates of the first and the survivor was
+ * stored under a key nothing could ever ask for — including the article, the
+ * conjunctive waw and the prepositions that between them touch a large share of
+ * the Hebrew Bible. They keep their letter instead, uppercased so that `HB`
+ * cannot be confused with any `H<number>`.
+ */
+export function lexicalIndexId(strong: string): string | null {
+  const raw = strong.trim();
+  if (/^\d+$/.test(raw)) return `H${Number(raw)}`;
+  if (/^[a-z]$/i.test(raw)) return `H${raw.toUpperCase()}`;
+  return null;
+}
+
+/** Numbered entries are words with a term page; the lettered ones are particles. */
+export function lexiconHref(id: string): string {
+  return /^H[A-Z]$/.test(id) ? `/particle/${id.slice(1).toLowerCase()}` : `/term/${id}`;
+}
+
 function parseLexicalIndex(xml: string): Map<string, BdbLink> {
   const links = new Map<string, BdbLink>();
   const parser = sax.parser(true, {});
@@ -207,7 +229,8 @@ function parseLexicalIndex(xml: string): Map<string, BdbLink> {
     if (node.name !== "xref") return;
     const attrs = node.attributes as Record<string, string>;
     if (!attrs.strong || !attrs.bdb) return;
-    const strongs = `H${Number(attrs.strong)}`;
+    const strongs = lexicalIndexId(attrs.strong);
+    if (!strongs) return;
     if (!links.has(strongs)) links.set(strongs, { bdbId: attrs.bdb, twot: attrs.twot ?? null });
   };
   parser.write(xml).close();
@@ -226,7 +249,7 @@ function bdbHandlers(bdbToStrongs: Map<string, string>): Handlers {
           if (attrs.src) {
             const target = bdbToStrongs.get(attrs.src);
             return target
-              ? pair(`<a class="lex-xref" href="/term/${target}">`, "a")
+              ? pair(`<a class="lex-xref" href="${lexiconHref(target)}">`, "a")
               : { open: "<span hidden>", close: "</span>" };
           }
           return pair('<span class="lex-heb" lang="he" dir="rtl">', "span");
