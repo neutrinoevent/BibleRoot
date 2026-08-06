@@ -2,6 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
+import { FilterChip } from "@/components/FilterChip";
 import { FormExplorer } from "@/components/FormExplorer";
 import { NotesPanel } from "@/components/NotesPanel";
 import { ResourceLinks } from "@/components/ResourceLinks";
@@ -35,13 +36,24 @@ function asArray(value: string | string[] | undefined): string[] {
   return Array.isArray(value) ? value : [value];
 }
 
-/** Links that carry the current filter, so choosing a wording never loses the rest. */
-function formHref(state: { as: string[]; show?: number }): string {
+/**
+ * Links that carry the current choice, so narrowing never loses the rest.
+ *
+ * The path has to be written out. A bare `#occurrences` is a link to a place on
+ * the page the reader is already on, so the browser keeps whatever is in the
+ * address and simply scrolls — which left the one link meant to clear a filter
+ * doing nothing at all.
+ */
+function formHref(
+  strongs: string,
+  original: string,
+  state: { as: string[]; show?: number },
+): string {
   const query = new URLSearchParams();
   for (const wording of state.as) query.append("as", wording);
   if (state.show) query.set("show", String(state.show));
   const search = query.toString();
-  return `${search ? `?${search}` : ""}#occurrences`;
+  return `/term/${strongs}/${encodeURIComponent(original)}${search ? `?${search}` : ""}#occurrences`;
 }
 
 export const dynamic = "force-dynamic";
@@ -258,31 +270,24 @@ export default async function FormPage({ params, searchParams }: Props) {
                 : [...chosen, rendering.english];
               return (
                 <li key={rendering.english}>
-                  <Link
-                    href={formHref({ as: next })}
-                    aria-pressed={picked}
+                  <FilterChip
+                    selected={picked}
                     title={
                       picked
                         ? `Stop showing only “${rendering.english}”`
                         : `Show only the verses rendered “${rendering.english}”`
                     }
-                    className={`flex items-baseline gap-2 rounded-full border px-3 py-1 text-sm transition-colors ${
-                      picked
-                        ? "border-accent bg-paper-raised text-accent"
-                        : "border-rule bg-paper-raised text-ink hover:border-rule-strong"
-                    }`}
+                    href={formHref(strongs, form.original, {
+                      as: picked ? [] : [rendering.english],
+                    })}
+                    toggleHref={formHref(strongs, form.original, { as: next })}
                   >
                     <span>{rendering.english}</span>
                     <span className={picked ? "text-xs text-accent" : "text-xs text-ink-faint"}>
                       {rendering.c}
                       {rendering.c === 1 ? " time" : " times"}
                     </span>
-                    {picked && (
-                      <span aria-hidden className="text-xs text-accent">
-                        ×
-                      </span>
-                    )}
-                  </Link>
+                  </FilterChip>
                 </li>
               );
             })}
@@ -290,7 +295,7 @@ export default async function FormPage({ params, searchParams }: Props) {
           {chosen.length > 0 && (
             <p className="mt-3 text-sm text-ink-soft">
               Showing only {chosen.map((wording) => `“${wording}”`).join(" and ")}.{" "}
-              <Link href={formHref({ as: [] })} className="text-accent hover:underline">
+              <Link href={formHref(strongs, form.original, { as: [] })} className="text-accent hover:underline">
                 Show all {everything.toLocaleString()} again
               </Link>
             </p>
@@ -337,7 +342,7 @@ export default async function FormPage({ params, searchParams }: Props) {
           <p className="mt-1 text-sm text-ink-faint">
             {(everything - total).toLocaleString()} further occurrence
             {everything - total === 1 ? " is" : "s are"} set aside by that choice.{" "}
-            <Link href={formHref({ as: [] })} className="text-accent hover:underline">
+            <Link href={formHref(strongs, form.original, { as: [] })} className="text-accent hover:underline">
               Show all {everything.toLocaleString()}
             </Link>
           </p>
@@ -368,7 +373,7 @@ export default async function FormPage({ params, searchParams }: Props) {
         </ul>
         {limit < total && (
           <Link
-            href={formHref({ as: chosen, show: limit + PAGE_SIZE * 5 })}
+            href={formHref(strongs, form.original, { as: chosen, show: limit + PAGE_SIZE * 5 })}
             className="mt-4 inline-block text-sm text-accent hover:underline"
           >
             Show {Math.min(PAGE_SIZE * 5, total - limit).toLocaleString()} more →

@@ -138,6 +138,72 @@ describe("choosing a wording never loses a verse", () => {
   });
 });
 
+describe("a filter can always be cleared", () => {
+  /** The href of the link or chip whose text matches. */
+  async function hrefFor(path: string, pattern: RegExp): Promise<string> {
+    const html = await (await fetch(`${BASE}${path}`)).text();
+    for (const match of html.matchAll(/<a[^>]*href="([^"]*)"[^>]*>([\s\S]*?)<\/a>/g)) {
+      const text = match[2].replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+      if (pattern.test(text)) return match[1].replace(/&amp;/g, "&");
+    }
+    throw new Error(`no link matching ${pattern} on ${path}`);
+  }
+
+  test("the clearing link carries a path, not only a fragment", async (t) => {
+    if (!serving) return t.skip("nothing serving");
+    // A bare "#occurrences" is a link to somewhere on the page already open, so
+    // the browser keeps the query string and merely scrolls. That left every
+    // clear-the-filter control doing nothing at all.
+    const all = await hrefFor("/term/H2896?book=16", /^All /);
+    assert.ok(all.startsWith("/term/H2896"), `the All chip would not navigate: ${all}`);
+    assert.ok(!all.includes("book="), `the All chip keeps the filter: ${all}`);
+
+    const showAll = await hrefFor(`/term/G18/${encodeURIComponent("ἀγαθὸν")}?as=good`, /^Show all/);
+    assert.ok(showAll.startsWith("/term/G18/"), `Show all would not navigate: ${showAll}`);
+    assert.ok(!showAll.includes("as="), `Show all keeps the filter: ${showAll}`);
+  });
+
+  test("a chosen chip offers a way back rather than where it already is", async (t) => {
+    if (!serving) return t.skip("nothing serving");
+    const html = await (await fetch(`${BASE}/term/H2896?book=19`)).text();
+    const chosen = /<a[^>]*aria-pressed="true"[^>]*href="([^"]*)"|<a[^>]*href="([^"]*)"[^>]*aria-pressed="true"/.exec(html);
+    assert.ok(chosen, "no chosen chip found");
+    const href = (chosen[1] ?? chosen[2]).replace(/&amp;/g, "&");
+    assert.ok(!href.includes("book=19"), `clicking the chosen chip would change nothing: ${href}`);
+  });
+});
+
+describe("narrowing to several books at once", () => {
+  test("two books show the sum of both", async (t) => {
+    if (!serving) return t.skip("nothing serving");
+    const psalms = showing(await textOf("/term/H2896?book=19")).total;
+    const proverbs = showing(await textOf("/term/H2896?book=20")).total;
+    const both = showing(await textOf("/term/H2896?book=19&book=20")).total;
+    assert.equal(both, psalms + proverbs);
+  });
+
+  test("every book together is every occurrence", async (t) => {
+    if (!serving) return t.skip("nothing serving");
+    const all = showing(await textOf("/term/H2896")).total;
+    const html = await (await fetch(`${BASE}/term/H2896`)).text();
+    const books = [...new Set([...html.matchAll(/book=(\d+)/g)].map((m) => m[1]))];
+    assert.ok(books.length > 5, "expected a spread of books");
+    const query = books.map((id) => `book=${id}`).join("&");
+    assert.equal(showing(await textOf(`/term/H2896?${query}`)).total, all);
+  });
+
+  test("a book the word never appears in is ignored, not obeyed", async (t) => {
+    if (!serving) return t.skip("nothing serving");
+    const all = showing(await textOf("/term/H2896")).total;
+    for (const bad of ["book=999", "book=abc", "book=", "book=-1"]) {
+      assert.equal(showing(await textOf(`/term/H2896?${bad}`)).total, all, `${bad} hid verses`);
+    }
+    // A real book alongside a bad one still narrows to the real one.
+    const psalms = showing(await textOf("/term/H2896?book=19")).total;
+    assert.equal(showing(await textOf("/term/H2896?book=999&book=19")).total, psalms);
+  });
+});
+
 describe("the deeper-dive links are reachable", () => {
   test("they come before the occurrence list, not after it", async (t) => {
     if (!serving) return t.skip("nothing serving");

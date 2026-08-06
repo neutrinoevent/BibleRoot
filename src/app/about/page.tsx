@@ -83,8 +83,9 @@ export default function AboutPage() {
           A word&apos;s page lists every place it is used, and a form&apos;s page lists every
           place that exact shape appears. Where a list is long, it can be narrowed: on a
           word&apos;s page by the book you want, and on a form&apos;s page by the wording the
-          translators chose. Choosing one wording shows those verses, choosing several shows
-          them together, and a chosen wording carries a small × to clear it. Nothing is ever
+          translators chose. Choosing one shows those verses; holding ⌘ or Ctrl while choosing
+          adds another, so several can be held together. A chosen one carries a small × and
+          clicking it plainly clears it. Nothing is ever
           dropped quietly — the page says how many it has set aside and offers the whole list
           back in one click.
         </p>

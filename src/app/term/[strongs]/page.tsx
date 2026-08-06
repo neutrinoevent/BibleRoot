@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 
 import { DeepLexicon } from "@/components/DeepLexicon";
+import { FilterChip } from "@/components/FilterChip";
 import { FormExplorer } from "@/components/FormExplorer";
 import { LexiconText, citedStrongs } from "@/components/LexiconText";
 import { Septuagint } from "@/components/Septuagint";
@@ -29,19 +30,35 @@ import { applyCustomTermResources, termResources } from "@/lib/resources";
 
 interface Props {
   params: Promise<{ strongs: string }>;
-  searchParams: Promise<{ show?: string; form?: string; book?: string }>;
+  searchParams: Promise<{ show?: string; form?: string; book?: string | string[] }>;
 }
 
 const PAGE_SIZE = 40;
 
-/** Keeps the form a reader arrived by, and their chosen book, across these links. */
-function occurrenceHref(state: { form?: string; book?: number; show?: number }): string {
+/** A repeated query parameter arrives as a string, a list, or not at all. */
+function asArray(value: string | string[] | undefined): string[] {
+  if (value === undefined) return [];
+  return Array.isArray(value) ? value : [value];
+}
+
+/**
+ * Keeps the form a reader arrived by, and the books they have chosen.
+ *
+ * The path has to be written out. A bare `#occurrences` is a link to a place on
+ * the page the reader is already on, so the browser keeps whatever is in the
+ * address and simply scrolls — which left the one link meant to clear a filter
+ * doing nothing at all.
+ */
+function occurrenceHref(
+  strongs: string,
+  state: { form?: string; books?: number[]; show?: number },
+): string {
   const query = new URLSearchParams();
   if (state.form) query.set("form", state.form);
-  if (state.book) query.set("book", String(state.book));
+  for (const book of state.books ?? []) query.append("book", String(book));
   if (state.show) query.set("show", String(state.show));
   const search = query.toString();
-  return `${search ? `?${search}` : ""}#occurrences`;
+  return `/term/${strongs}${search ? `?${search}` : ""}#occurrences`;
 }
 
 // Saved state and notes for the term are read from disk per request.
@@ -65,15 +82,22 @@ export default async function TermPage({ params, searchParams }: Props) {
 
   const spread = getOccurrenceSpread(strongs);
 
-  // A book to narrow to, honoured only if the word actually occurs there.
-  const inBook = spread.some((row) => row.book_id === Number(book)) ? Number(book) : undefined;
+  // Books to narrow to, each honoured only if the word actually occurs there, so
+  // a stale or mistyped one is dropped rather than matched against nothing.
+  const present = new Set(spread.map((row) => row.book_id));
+  const chosenBooks = [...new Set(asArray(book).map(Number))].filter((id) => present.has(id));
 
   // Every occurrence means every one. The list grows a page at a time so the
   // commonest words stay usable, and it stops only when the reader has them all.
   const allTotal = countOccurrences(strongs);
-  const total = inBook ? countOccurrences(strongs, inBook) : allTotal;
+  const total = chosenBooks.length > 0 ? countOccurrences(strongs, chosenBooks) : allTotal;
   const limit = Math.max(PAGE_SIZE, Math.min(Number(show) || PAGE_SIZE, total));
-  const occurrences = getOccurrences(strongs, limit, 0, inBook);
+  const occurrences = getOccurrences(
+    strongs,
+    limit,
+    0,
+    chosenBooks.length > 0 ? chosenBooks : undefined,
+  );
   const deepEntries = getDeepLexiconEntries(strongs);
   const forms = getInflectedForms(strongs);
   const septuagint =
@@ -264,19 +288,35 @@ export default async function TermPage({ params, searchParams }: Props) {
 
       <section id="occurrences" className="mt-10 scroll-mt-20">
         <h2 className="font-serif text-lg">
-          Every occurrence{" "}
+          {chosenBooks.length > 0 ? "The occurrences you chose" : "Every occurrence"}{" "}
           <span className="text-sm font-normal text-ink-faint">
             (showing {Math.min(limit, total).toLocaleString()} of {total.toLocaleString()}
-            {inBook ? ` in ${BOOKS_BY_ID.get(inBook)?.name}` : ""})
+            {chosenBooks.length > 0
+              ? ` in ${chosenBooks.map((id) => BOOKS_BY_ID.get(id)?.name).join(", ")}`
+              : ""}
+            )
           </span>
         </h2>
+        {/* Never let a filter make verses disappear without saying so. */}
+        {chosenBooks.length > 0 && allTotal > total && (
+          <p className="mt-1 text-sm text-ink-faint">
+            {(allTotal - total).toLocaleString()} further occurrence
+            {allTotal - total === 1 ? " is" : "s are"} set aside by that choice.{" "}
+            <Link
+              href={occurrenceHref(strongs, { form })}
+              className="text-accent hover:underline"
+            >
+              Show all {allTotal.toLocaleString()}
+            </Link>
+          </p>
+        )}
 
         {spread.length > 1 && (
           <div className="mt-3 flex flex-wrap gap-1.5">
             <Link
-              href={occurrenceHref({ form })}
+              href={occurrenceHref(strongs, { form })}
               className={`rounded-full border px-3 py-1 text-xs transition-colors ${
-                inBook
+                chosenBooks.length > 0
                   ? "border-rule text-ink-soft hover:border-rule-strong"
                   : "border-accent text-accent"
               }`}
@@ -285,20 +325,30 @@ export default async function TermPage({ params, searchParams }: Props) {
             </Link>
             {[...spread]
               .sort((a, b) => b.c - a.c)
-              .map((row) => (
-                <Link
-                  key={row.book_id}
-                  href={occurrenceHref({ form, book: row.book_id })}
-                  className={`rounded-full border px-3 py-1 text-xs transition-colors ${
-                    inBook === row.book_id
-                      ? "border-accent text-accent"
-                      : "border-rule text-ink-soft hover:border-rule-strong"
-                  }`}
-                >
-                  {BOOKS_BY_ID.get(row.book_id)?.name}{" "}
-                  <span className="text-ink-faint">{row.c.toLocaleString()}</span>
-                </Link>
-              ))}
+              .map((row) => {
+                const picked = chosenBooks.includes(row.book_id);
+                const name = BOOKS_BY_ID.get(row.book_id)?.name;
+                return (
+                  <FilterChip
+                    key={row.book_id}
+                    selected={picked}
+                    title={picked ? `Stop showing only ${name}` : `Show only ${name}`}
+                    href={occurrenceHref(strongs, {
+                      form,
+                      books: picked ? [] : [row.book_id],
+                    })}
+                    toggleHref={occurrenceHref(strongs, {
+                      form,
+                      books: picked
+                        ? chosenBooks.filter((id) => id !== row.book_id)
+                        : [...chosenBooks, row.book_id],
+                    })}
+                  >
+                    <span className="text-xs">{name}</span>
+                    <span className="text-xs text-ink-faint">{row.c.toLocaleString()}</span>
+                  </FilterChip>
+                );
+              })}
           </div>
         )}
         <ul className="mt-3 divide-y divide-rule border-y border-rule">
@@ -333,7 +383,7 @@ export default async function TermPage({ params, searchParams }: Props) {
         </ul>
         {limit < total && (
           <Link
-            href={occurrenceHref({ form, book: inBook, show: limit + PAGE_SIZE * 5 })}
+            href={occurrenceHref(strongs, { form, books: chosenBooks, show: limit + PAGE_SIZE * 5 })}
             className="mt-4 inline-block text-sm text-accent hover:underline"
           >
             Show {Math.min(PAGE_SIZE * 5, total - limit).toLocaleString()} more →

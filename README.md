@@ -45,10 +45,13 @@ On a verse page:
 On a word or form page:
 
 - **Every occurrence** — the whole list, however long. Nothing is capped.
-- **Narrowing it** — a word's page can be limited to one book, a form's page to
-  the wordings the translators used. Choose several to see them together; each
-  chosen one carries a small × to clear it. The page always says how many it has
-  set aside, and offers the full list back in a click.
+- **Narrowing it** — a word's page can be limited to one or more books, a form's
+  page to the wordings the translators used. Clicking chooses one on its own;
+  **⌘-click** (or **Ctrl-click**) adds another, so several can be held together.
+  A chosen one carries a small × and clicking it plainly clears it. The page
+  always says how many it has set aside, and offers the full list back in a
+  click. Every choice is in the address, so a narrowed list can be bookmarked or
+  shared.
 - **Take it further** — the outbound links to the standard scholarly tools sit
   above the occurrence list, so a long list never buries them.
 

@@ -234,10 +234,11 @@ export function getOccurrences(
   strongsId: string,
   limit: number,
   offset = 0,
-  bookId?: number,
+  bookIds?: number[],
 ): Occurrence[] {
-  const inBook = bookId ? "AND v.book_id = ?" : "";
-  const params: Array<string | number> = bookId ? [strongsId, bookId] : [strongsId];
+  const chosen = bookIds ?? [];
+  const inBook = chosen.length > 0 ? `AND v.book_id IN (${chosen.map(() => "?").join(", ")})` : "";
+  const params: Array<string | number> = [strongsId, ...chosen];
   return queryAll<Occurrence>(
     `SELECT v.ref, v.book_id, v.chapter, v.verse, v.text,
             w.english, w.original, w.translit, w.parsing
@@ -478,8 +479,9 @@ export function countFormOccurrences(
   );
 }
 
-export function countOccurrences(strongsId: string, bookId?: number): number {
-  if (!bookId) {
+export function countOccurrences(strongsId: string, bookIds?: number[]): number {
+  const chosen = bookIds ?? [];
+  if (chosen.length === 0) {
     return (
       queryOne<{ c: number }>("SELECT COUNT(*) AS c FROM words WHERE strongs = ?", [strongsId])
         ?.c ?? 0
@@ -489,8 +491,8 @@ export function countOccurrences(strongsId: string, bookId?: number): number {
     queryOne<{ c: number }>(
       `SELECT COUNT(*) AS c
          FROM words w JOIN verses v ON v.id = w.verse_id
-        WHERE w.strongs = ? AND v.book_id = ?`,
-      [strongsId, bookId],
+        WHERE w.strongs = ? AND v.book_id IN (${chosen.map(() => "?").join(", ")})`,
+      [strongsId, ...chosen],
     )?.c ?? 0
   );
 }
