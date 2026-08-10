@@ -204,6 +204,23 @@ describe("narrowing to several books at once", () => {
   });
 });
 
+describe("keeping a verse", () => {
+  test("every verse page offers to save, and says which it means", async (t) => {
+    if (!serving) return t.skip("nothing serving");
+    const single = await textOf("/verse/proverbs/20/22");
+    assert.match(single, /Save this verse/, "a verse cannot be kept");
+
+    const selection = await textOf("/verse/john/1/1,7,10");
+    assert.match(selection, /Save these verses/, "a selection cannot be kept");
+  });
+
+  test("the library explains itself before anything is in it", async (t) => {
+    if (!serving) return t.skip("nothing serving");
+    const text = await textOf("/library");
+    assert.match(text, /Saved passages/, "the library does not mention passages");
+  });
+});
+
 describe("the deeper-dive links are reachable", () => {
   test("they come before the occurrence list, not after it", async (t) => {
     if (!serving) return t.skip("nothing serving");

@@ -1,22 +1,31 @@
 import Link from "next/link";
 
 import { NotesPanel } from "@/components/NotesPanel";
-import { libraryRootForDisplay, listNotes, listTerms, savedTermKey } from "@/lib/library";
+import {
+  libraryRootForDisplay,
+  listNotes,
+  listPassages,
+  listTerms,
+  savedPassageKey,
+  savedTermKey,
+} from "@/lib/library";
 import { scriptOfLanguage } from "@/lib/render";
-import { wordHref } from "@/lib/refs";
+import { hrefForBookId, wordHref } from "@/lib/refs";
+import { BOOKS_BY_ID } from "@/lib/books";
 
 export const metadata = { title: "Library — BibleRoot" };
 export const dynamic = "force-dynamic";
 
 export default async function LibraryPage() {
-  const [terms, notes] = await Promise.all([listTerms(), listNotes()]);
+  const [terms, notes, passages] = await Promise.all([listTerms(), listNotes(), listPassages()]);
   const relativeDir = libraryRootForDisplay();
 
   return (
     <div className="mx-auto max-w-3xl px-5 py-12">
       <h1 className="font-serif text-3xl tracking-tight">Library</h1>
       <p className="mt-2 text-sm text-ink-soft">
-        {terms.length} saved word{terms.length === 1 ? "" : "s"} · {notes.length} note
+        {terms.length} saved word{terms.length === 1 ? "" : "s"} · {passages.length} saved
+        passage{passages.length === 1 ? "" : "s"} · {notes.length} note
         {notes.length === 1 ? "" : "s"} · kept as plain text on your own computer, in{" "}
         <code className="text-ink-faint">{relativeDir}</code>
       </p>
@@ -68,6 +77,49 @@ export default async function LibraryPage() {
                       <p className="mt-2 line-clamp-3 text-xs leading-relaxed text-ink-faint">
                         {term.notes}
                       </p>
+                    )}
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
+      <section className="mt-12">
+        <h2 className="font-serif text-lg">Saved passages</h2>
+        {passages.length === 0 ? (
+          <p className="mt-2 text-sm text-ink-faint">
+            Save a verse, or a set of verses you are reading together, and it will wait here.
+          </p>
+        ) : (
+          <ul className="mt-4 space-y-3">
+            {passages.map((passage) => {
+              const book = BOOKS_BY_ID.get(passage.bookId);
+              const href = book
+                ? `/verse/${book.slug}/${passage.chapter}/${passage.verses.join(",")}`
+                : hrefForBookId(passage.bookId, passage.chapter, passage.verses[0]);
+              return (
+                <li key={savedPassageKey(passage)}>
+                  <Link
+                    href={href}
+                    className="block rounded-xl border border-rule bg-paper-raised p-4 transition-colors hover:border-rule-strong"
+                  >
+                    <div className="flex items-baseline justify-between gap-3">
+                      <span className="font-serif text-base text-ink">{passage.ref}</span>
+                      {passage.verses.length > 1 && (
+                        <span className="shrink-0 text-xs text-ink-faint">
+                          {passage.verses.length} verses together
+                        </span>
+                      )}
+                    </div>
+                    {passage.excerpt && (
+                      <p className="mt-1 line-clamp-2 font-serif text-sm leading-snug text-ink-soft">
+                        {passage.excerpt}
+                      </p>
+                    )}
+                    {passage.body && (
+                      <p className="mt-2 line-clamp-2 text-sm text-ink-faint">{passage.body}</p>
                     )}
                   </Link>
                 </li>

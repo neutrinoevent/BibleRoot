@@ -1,8 +1,16 @@
 import Link from "next/link";
 
 import { SearchBox } from "@/components/SearchBox";
+import { BOOKS_BY_ID } from "@/lib/books";
 import { corpusExists } from "@/lib/db";
-import { libraryCounts, listNotes, listTerms, savedTermKey } from "@/lib/library";
+import {
+  libraryCounts,
+  listNotes,
+  listPassages,
+  listTerms,
+  savedPassageKey,
+  savedTermKey,
+} from "@/lib/library";
 import { wordHref } from "@/lib/refs";
 import { scriptOfLanguage } from "@/lib/render";
 
@@ -37,8 +45,14 @@ function CorpusMissing() {
 export default async function HomePage() {
   if (!corpusExists()) return <CorpusMissing />;
 
-  const [counts, terms, notes] = await Promise.all([libraryCounts(), listTerms(), listNotes()]);
+  const [counts, terms, notes, passages] = await Promise.all([
+    libraryCounts(),
+    listTerms(),
+    listNotes(),
+    listPassages(),
+  ]);
   const recentTerms = terms.slice(0, 6);
+  const recentPassages = passages.slice(0, 5);
   const recentNotes = notes.slice(0, 4);
 
   return (
@@ -68,7 +82,7 @@ export default async function HomePage() {
         ))}
       </div>
 
-      {(counts.terms > 0 || counts.notes > 0) && (
+      {(counts.terms > 0 || counts.notes > 0 || counts.passages > 0) && (
         <section className="mt-16 border-t border-rule pt-8">
           <div className="flex items-baseline justify-between">
             <h2 className="font-serif text-xl">Your library</h2>
@@ -94,6 +108,32 @@ export default async function HomePage() {
                         {term.form ?? term.lemma}
                       </span>
                       <span className="text-sm text-ink-soft">{term.gloss?.split(";")[0]}</span>
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          {recentPassages.length > 0 && (
+            <ul className="mt-4 space-y-1.5">
+              {recentPassages.map((passage) => {
+                const book = BOOKS_BY_ID.get(passage.bookId);
+                const href = book
+                  ? `/verse/${book.slug}/${passage.chapter}/${passage.verses.join(",")}`
+                  : "/library";
+                return (
+                  <li key={savedPassageKey(passage)}>
+                    <Link
+                      href={href}
+                      className="flex items-baseline gap-3 text-sm transition-colors hover:text-accent"
+                    >
+                      <span className="text-ink">{passage.ref}</span>
+                      {passage.excerpt && (
+                        <span className="min-w-0 truncate text-xs text-ink-faint">
+                          {passage.excerpt}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 );

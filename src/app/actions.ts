@@ -4,11 +4,16 @@ import { revalidatePath } from "next/cache";
 
 import {
   deleteNote,
+  isPassageSaved,
   isTermSaved,
+  removePassage,
   removeTerm,
   saveNote,
+  savePassage,
+  savePassageNotes,
   saveTerm,
   type SaveNoteInput,
+  type SavePassageInput,
   type SaveTermInput,
 } from "@/lib/library";
 
@@ -51,6 +56,32 @@ export async function saveNoteAction(input: SaveNoteInput): Promise<{ id: string
 export async function deleteNoteAction(id: string): Promise<{ ok: true }> {
   await deleteNote(id);
   refresh(["/library", "/"]);
+  revalidatePath("/verse", "layout");
+  return { ok: true };
+}
+
+export async function togglePassageAction(
+  input: SavePassageInput,
+): Promise<{ saved: boolean }> {
+  const alreadySaved = await isPassageSaved(input.bookId, input.chapter, input.verses);
+  if (alreadySaved) {
+    await removePassage(input.bookId, input.chapter, input.verses);
+  } else {
+    await savePassage(input);
+  }
+  refresh(["/library", "/"]);
+  revalidatePath("/verse", "layout");
+  return { saved: !alreadySaved };
+}
+
+export async function savePassageNotesAction(
+  bookId: number,
+  chapter: number,
+  verses: number[],
+  body: string,
+): Promise<{ ok: true }> {
+  await savePassageNotes(bookId, chapter, verses, body);
+  refresh(["/library"]);
   revalidatePath("/verse", "layout");
   return { ok: true };
 }

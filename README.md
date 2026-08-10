@@ -41,6 +41,9 @@ On a verse page:
 - **The interlinear** — every word in the order of the original text, Hebrew and
   Aramaic running right to left. Select any word to open its root.
 - **Notes** — anchored to that verse.
+- **Save** — keep the verse, or the whole selection, in your library for later.
+  Saving a set of verses keeps that set; the same verses chosen in a different
+  order are the same passage, and a smaller selection from it is its own.
 
 On a word or form page:
 
@@ -128,6 +131,7 @@ the interface.
 ```
 <library>/
   terms/H7451.md                          # a saved word, plus your notes on it
+  passages/proverbs-20-22.md              # a verse kept for later
   terms/H1952--me-ho-w-ne-ka.md           # a saved form of a word
   notes/2026-08-03-proverbs-20-22.md      # a note, anchored to a verse or a term
 ```

@@ -80,6 +80,12 @@ export default function AboutPage() {
       </p>
 
               <p className="mt-4">
+          Any verse can be kept for later, and so can a set of verses you are reading side by
+          side. Saving asks nothing of you beyond a click — a passage often matters before you
+          know what you want to say about it. Saved passages gather in your library, and notes
+          you write on that verse sit with them.
+        </p>
+        <p className="mt-4">
           A word&apos;s page lists every place it is used, and a form&apos;s page lists every
           place that exact shape appears. Where a list is long, it can be narrowed: on a
           word&apos;s page by the book you want, and on a form&apos;s page by the wording the

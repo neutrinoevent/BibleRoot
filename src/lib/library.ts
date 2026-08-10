@@ -6,6 +6,7 @@ import fsp from "node:fs/promises";
 import path from "node:path";
 
 import { displayPath, resolveLibraryRoot } from "./library-location";
+import { orderedVerses, savedPassageKey } from "./passage-key";
 import type { CustomResource, CustomResourceFile } from "./resources";
 
 /**
@@ -13,8 +14,9 @@ import type { CustomResource, CustomResourceFile } from "./resources";
  * frontmatter header, so the library stays readable, greppable and
  * version-controllable outside the app:
  *
- *   terms/H7451.md   — a saved word, plus notes about it
- *   notes/<id>.md    — a free note, optionally anchored to a verse
+ *   terms/H7451.md            — a saved word, plus notes about it
+ *   passages/john-1-1.md      — a verse kept for later, plus notes about it
+ *   notes/<id>.md             — a free note, optionally anchored to a verse
  *
  * They sit in the folder this platform keeps an application's files in, not in
  * the project, so that reinstalling or rebuilding never touches them.
@@ -31,12 +33,14 @@ export function libraryRootForDisplay(): string {
 
 const termsDirectory = () => path.join(resolveLibraryRoot(), "terms");
 const notesDirectory = () => path.join(resolveLibraryRoot(), "notes");
+const passagesDirectory = () => path.join(resolveLibraryRoot(), "passages");
 
 type Frontmatter = Record<string, string | string[]>;
 
 function ensureDirs() {
   fs.mkdirSync(termsDirectory(), { recursive: true });
   fs.mkdirSync(notesDirectory(), { recursive: true });
+  fs.mkdirSync(passagesDirectory(), { recursive: true });
 }
 
 function serializeValue(value: string | string[]): string {
@@ -318,6 +322,199 @@ export async function isTermSaved(strongs: string, form?: string | null): Promis
   return (await getTerm(strongs, form)) !== null;
 }
 
+/* --------------------------------------------------------------- passages */
+
+/**
+ * A verse kept for later, or a set of verses being read together.
+ *
+ * The same shape as a saved word: what was saved in the frontmatter, whatever
+ * the reader wants to say about it in the body. A selection is not a different
+ * kind of thing here — one verse is simply a passage with one verse in it.
+ */
+export interface SavedPassage {
+  ref: string;
+  bookId: number;
+  chapter: number;
+  verses: number[];
+  /** A little of the text, so the library can be read without opening each one. */
+  excerpt: string | null;
+  tags: string[];
+  body: string;
+  savedAt: string;
+  updatedAt: string;
+}
+
+export interface SavePassageInput {
+  ref: string;
+  bookId: number;
+  chapter: number;
+  verses: number[];
+  excerpt?: string | null;
+}
+
+export { savedPassageKey } from "./passage-key";
+
+async function readPassageFile(file: string): Promise<SavedPassage | null> {
+  try {
+    const { frontmatter, body } = parse(await fsp.readFile(file, "utf8"));
+    const bookId = Number(str(frontmatter.book_id));
+    const chapter = Number(str(frontmatter.chapter));
+    const verses = orderedVerses(list(frontmatter.verses).map(Number));
+    if (!Number.isInteger(bookId) || !Number.isInteger(chapter) || verses.length === 0) return null;
+    return {
+      ref: str(frontmatter.ref) ?? "",
+      bookId,
+      chapter,
+      verses,
+      excerpt: str(frontmatter.excerpt) ?? null,
+      tags: list(frontmatter.tags),
+      body,
+      savedAt: str(frontmatter.saved_at) ?? "",
+      updatedAt: str(frontmatter.updated_at) ?? str(frontmatter.saved_at) ?? "",
+    };
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Found by what the file says rather than by its name. A reader may rename or
+ * edit these — they are their own markdown files — and the passage they describe
+ * is what decides which one this is.
+ */
+async function findPassageFile(
+  bookId: number,
+  chapter: number,
+  verses: number[],
+): Promise<string | null> {
+  const wanted = savedPassageKey({ bookId, chapter, verses });
+  let files: string[];
+  try {
+    files = await fsp.readdir(passagesDirectory());
+  } catch {
+    return null;
+  }
+  for (const file of files) {
+    if (!file.endsWith(".md")) continue;
+    const full = path.join(passagesDirectory(), file);
+    const parsed = await readPassageFile(full);
+    if (parsed && savedPassageKey(parsed) === wanted) return full;
+  }
+  return null;
+}
+
+export async function getPassage(
+  bookId: number,
+  chapter: number,
+  verses: number[],
+): Promise<SavedPassage | null> {
+  const file = await findPassageFile(bookId, chapter, verses);
+  return file ? readPassageFile(file) : null;
+}
+
+export async function listPassages(): Promise<SavedPassage[]> {
+  ensureDirs();
+  const files = await fsp.readdir(passagesDirectory());
+  const passages = await Promise.all(
+    files
+      .filter((file) => file.endsWith(".md"))
+      .map((file) => readPassageFile(path.join(passagesDirectory(), file))),
+  );
+  return passages
+    .filter((passage): passage is SavedPassage => passage !== null)
+    .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
+}
+
+export async function savePassage(input: SavePassageInput): Promise<SavedPassage> {
+  ensureDirs();
+  const verses = orderedVerses(input.verses);
+  if (verses.length === 0) throw new Error("a passage needs at least one verse");
+
+  const now = new Date().toISOString();
+  const existingFile = await findPassageFile(input.bookId, input.chapter, verses);
+  const existing = existingFile ? await readPassageFile(existingFile) : null;
+
+  const passage: SavedPassage = {
+    ref: input.ref,
+    bookId: input.bookId,
+    chapter: input.chapter,
+    verses,
+    excerpt: input.excerpt ?? existing?.excerpt ?? null,
+    tags: existing?.tags ?? [],
+    body: existing?.body ?? "",
+    savedAt: existing?.savedAt || now,
+    updatedAt: now,
+  };
+
+  const file = existingFile ?? path.join(passagesDirectory(), `${passageSlug(passage)}.md`);
+  await fsp.writeFile(
+    file,
+    serialize(
+      {
+        ref: passage.ref,
+        book_id: String(passage.bookId),
+        chapter: String(passage.chapter),
+        verses: passage.verses.map(String),
+        excerpt: passage.excerpt ?? "",
+        tags: passage.tags,
+        saved_at: passage.savedAt,
+        updated_at: passage.updatedAt,
+      },
+      passage.body,
+    ),
+    "utf8",
+  );
+  return passage;
+}
+
+/** Notes the reader writes about a passage they have saved. */
+export async function savePassageNotes(
+  bookId: number,
+  chapter: number,
+  verses: number[],
+  body: string,
+): Promise<void> {
+  const file = await findPassageFile(bookId, chapter, verses);
+  if (!file) return;
+  const passage = await readPassageFile(file);
+  if (!passage) return;
+  await fsp.writeFile(
+    file,
+    serialize(
+      {
+        ref: passage.ref,
+        book_id: String(passage.bookId),
+        chapter: String(passage.chapter),
+        verses: passage.verses.map(String),
+        excerpt: passage.excerpt ?? "",
+        tags: passage.tags,
+        saved_at: passage.savedAt,
+        updated_at: new Date().toISOString(),
+      },
+      body,
+    ),
+    "utf8",
+  );
+}
+
+export async function removePassage(
+  bookId: number,
+  chapter: number,
+  verses: number[],
+): Promise<void> {
+  const file = await findPassageFile(bookId, chapter, verses);
+  if (!file) return;
+  await fsp.rm(file, { force: true });
+}
+
+export async function isPassageSaved(
+  bookId: number,
+  chapter: number,
+  verses: number[],
+): Promise<boolean> {
+  return (await findPassageFile(bookId, chapter, verses)) !== null;
+}
+
 /* ------------------------------------------------------------------ notes */
 
 export interface Note {
@@ -337,6 +534,12 @@ function slugify(value: string): string {
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
     .slice(0, 48);
+}
+
+/** Readable, and stable for the same passage. The contents still decide identity. */
+function passageSlug(passage: Pick<SavedPassage, "ref" | "bookId" | "chapter" | "verses">): string {
+  const slug = slugify(passage.ref);
+  return slug || `passage-${passage.bookId}-${passage.chapter}-${passage.verses.join("-")}`;
 }
 
 function noteFile(id: string): string {
@@ -478,11 +681,17 @@ export async function readCustomResources(): Promise<CustomResourceFile> {
   }
 }
 
-export async function libraryCounts(): Promise<{ terms: number; notes: number }> {
+export async function libraryCounts(): Promise<{
+  terms: number;
+  notes: number;
+  passages: number;
+}> {
   ensureDirs();
-  const [terms, notes] = await Promise.all([fsp.readdir(termsDirectory()), fsp.readdir(notesDirectory())]);
-  return {
-    terms: terms.filter((f) => f.endsWith(".md")).length,
-    notes: notes.filter((f) => f.endsWith(".md")).length,
-  };
+  const [terms, notes, passages] = await Promise.all([
+    fsp.readdir(termsDirectory()),
+    fsp.readdir(notesDirectory()),
+    fsp.readdir(passagesDirectory()),
+  ]);
+  const markdown = (files: string[]) => files.filter((file) => file.endsWith(".md")).length;
+  return { terms: markdown(terms), notes: markdown(notes), passages: markdown(passages) };
 }

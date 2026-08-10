@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 
 import { InterlinearGrid } from "@/components/InterlinearGrid";
 import { NotesPanel } from "@/components/NotesPanel";
+import { SavePassageButton } from "@/components/SavePassageButton";
 import { ReadingLine } from "@/components/ReadingLine";
 import { ResourceLinks } from "@/components/ResourceLinks";
 import { SharedRoots } from "@/components/SharedRoots";
@@ -17,7 +18,7 @@ import {
   type AnnotatedWord,
   type Verse,
 } from "@/lib/corpus";
-import { notesForRef, readCustomResources } from "@/lib/library";
+import { getPassage, notesForRef, readCustomResources } from "@/lib/library";
 import {
   bookFromSlug,
   chapterHref,
@@ -145,7 +146,11 @@ export default async function VersePage({ params }: Props) {
   const noteRef = label;
   const missing = requested.filter((number) => !numbers.includes(number));
 
-  const [notes, custom] = await Promise.all([notesForRef(noteRef), readCustomResources()]);
+  const [notes, custom, savedPassage] = await Promise.all([
+    notesForRef(noteRef),
+    readCustomResources(),
+    getPassage(book.id, chapter, numbers),
+  ]);
 
   // Resource links address a single verse, so a selection uses its first.
   const verseContext = {
@@ -176,7 +181,19 @@ export default async function VersePage({ params }: Props) {
         </span>
       </nav>
 
-      <h1 className="mt-4 font-serif text-2xl tracking-tight">{label}</h1>
+      <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
+        <h1 className="font-serif text-2xl tracking-tight">{label}</h1>
+        <SavePassageButton
+          initiallySaved={savedPassage !== null}
+          passage={{
+            ref: label,
+            bookId: book.id,
+            chapter,
+            verses: numbers,
+            excerpt: found[0].verse.text,
+          }}
+        />
+      </div>
       {multiple && (
         <p className="mt-1 text-sm text-ink-faint">
           {found.length} verses, side by side. A note written here belongs to all of them.

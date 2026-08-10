@@ -11,6 +11,7 @@ import assert from "node:assert/strict";
 
 import { computeLibraryRoot, APP_DIR_NAME } from "../src/lib/library-location.ts";
 import { decomposeParsing, PARTICLE_NOTES } from "../src/lib/morphology.ts";
+import { savedPassageKey } from "../src/lib/passage-key.ts";
 
 /**
  * The home directories below are invented, and joined together at runtime so
@@ -122,5 +123,33 @@ describe("the particles", () => {
       assert.ok(note, `no note for particle ${letter}`);
       assert.ok(note.form.length > 0 && note.label.length > 0 && note.meaning.length > 0);
     }
+  });
+});
+
+describe("telling one saved passage from another", () => {
+  const key = (bookId: number, chapter: number, verses: number[]) =>
+    savedPassageKey({ bookId, chapter, verses });
+
+  test("the order verses were picked in does not make a new passage", () => {
+    assert.equal(key(43, 1, [1, 7, 10]), key(43, 1, [10, 7, 1]));
+  });
+
+  test("picking the same verse twice does not make a new passage", () => {
+    assert.equal(key(43, 1, [1, 7]), key(43, 1, [7, 1, 7]));
+  });
+
+  test("a smaller selection is its own passage", () => {
+    // Removing one must never take the other with it.
+    assert.notEqual(key(43, 1, [1, 7]), key(43, 1, [1, 7, 10]));
+    assert.notEqual(key(43, 1, [1]), key(43, 1, [1, 7]));
+  });
+
+  test("the same numbers in another book or chapter are different passages", () => {
+    assert.notEqual(key(43, 1, [1]), key(44, 1, [1]));
+    assert.notEqual(key(43, 1, [1]), key(43, 2, [1]));
+  });
+
+  test("nonsense verse numbers are dropped rather than kept", () => {
+    assert.equal(key(43, 1, [1, 0, -3, 7]), key(43, 1, [1, 7]));
   });
 });
