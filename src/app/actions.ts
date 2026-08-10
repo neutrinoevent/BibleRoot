@@ -85,3 +85,42 @@ export async function savePassageNotesAction(
   revalidatePath("/verse", "layout");
   return { ok: true };
 }
+
+/**
+ * Saves several passages in one go, and says what it actually did.
+ *
+ * Anything already kept is left alone rather than written a second time, so a
+ * reader who saves a verse, adds another to their selection and saves again
+ * ends up with what they expect and nothing duplicated.
+ */
+export async function savePassagesAction(
+  inputs: SavePassageInput[],
+): Promise<{ saved: number; already: number }> {
+  let saved = 0;
+  let already = 0;
+  for (const input of inputs) {
+    if (await isPassageSaved(input.bookId, input.chapter, input.verses)) {
+      already += 1;
+      continue;
+    }
+    await savePassage(input);
+    saved += 1;
+  }
+  refresh(["/library", "/"]);
+  revalidatePath("/verse", "layout");
+  return { saved, already };
+}
+
+export async function removePassagesAction(
+  passages: Array<{ bookId: number; chapter: number; verses: number[] }>,
+): Promise<{ removed: number }> {
+  let removed = 0;
+  for (const passage of passages) {
+    if (!(await isPassageSaved(passage.bookId, passage.chapter, passage.verses))) continue;
+    await removePassage(passage.bookId, passage.chapter, passage.verses);
+    removed += 1;
+  }
+  refresh(["/library", "/"]);
+  revalidatePath("/verse", "layout");
+  return { removed };
+}

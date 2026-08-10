@@ -82,8 +82,12 @@ export default function AboutPage() {
               <p className="mt-4">
           Any verse can be kept for later, and so can a set of verses you are reading side by
           side. Saving asks nothing of you beyond a click — a passage often matters before you
-          know what you want to say about it. Saved passages gather in your library, and notes
-          you write on that verse sit with them.
+          know what you want to say about it. When several verses are open together you can choose which of them to
+          keep, and whether to keep them as one passage or as separate verses — a thread of
+          three verses that belong together is one thing, four verses noticed while reading is
+          another. Both can be true of the same verse, and removing one never removes the
+          other. Saved passages gather in your library, and notes you write on that verse sit
+          with them.
         </p>
         <p className="mt-4">
           A word&apos;s page lists every place it is used, and a form&apos;s page lists every

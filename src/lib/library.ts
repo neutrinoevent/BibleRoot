@@ -425,6 +425,20 @@ export async function listPassages(): Promise<SavedPassage[]> {
     .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt));
 }
 
+/**
+ * Which passages in this chapter are already kept, as keys.
+ *
+ * A page showing several verses needs to know not only whether the whole
+ * selection is saved but whether any part of it is, so it can say so rather than
+ * silently saving a second copy of something already there.
+ */
+export async function savedPassageKeysIn(bookId: number, chapter: number): Promise<string[]> {
+  const all = await listPassages();
+  return all
+    .filter((passage) => passage.bookId === bookId && passage.chapter === chapter)
+    .map(savedPassageKey);
+}
+
 export async function savePassage(input: SavePassageInput): Promise<SavedPassage> {
   ensureDirs();
   const verses = orderedVerses(input.verses);

@@ -41,9 +41,13 @@ On a verse page:
 - **The interlinear** — every word in the order of the original text, Hebrew and
   Aramaic running right to left. Select any word to open its root.
 - **Notes** — anchored to that verse.
-- **Save** — keep the verse, or the whole selection, in your library for later.
-  Saving a set of verses keeps that set; the same verses chosen in a different
-  order are the same passage, and a smaller selection from it is its own.
+- **Save** — keep the verse in your library for later. With several verses open
+  together you choose which of them to keep, and whether to keep them **as one
+  passage** or **each on its own**. A group holds scattered verses together as a
+  single entry; separate saves stand alone. The same verse can be in both, and
+  removing one never removes the other. The same verses picked in a different
+  order are the same passage, and a smaller selection out of a larger one is
+  its own.
 
 On a word or form page:
 

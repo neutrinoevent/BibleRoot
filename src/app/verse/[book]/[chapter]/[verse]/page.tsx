@@ -4,6 +4,7 @@ import type { Metadata } from "next";
 
 import { InterlinearGrid } from "@/components/InterlinearGrid";
 import { NotesPanel } from "@/components/NotesPanel";
+import { PassageSaver } from "@/components/PassageSaver";
 import { SavePassageButton } from "@/components/SavePassageButton";
 import { ReadingLine } from "@/components/ReadingLine";
 import { ResourceLinks } from "@/components/ResourceLinks";
@@ -18,7 +19,7 @@ import {
   type AnnotatedWord,
   type Verse,
 } from "@/lib/corpus";
-import { getPassage, notesForRef, readCustomResources } from "@/lib/library";
+import { getPassage, notesForRef, readCustomResources, savedPassageKeysIn } from "@/lib/library";
 import {
   bookFromSlug,
   chapterHref,
@@ -146,10 +147,11 @@ export default async function VersePage({ params }: Props) {
   const noteRef = label;
   const missing = requested.filter((number) => !numbers.includes(number));
 
-  const [notes, custom, savedPassage] = await Promise.all([
+  const [notes, custom, savedPassage, savedKeys] = await Promise.all([
     notesForRef(noteRef),
     readCustomResources(),
     getPassage(book.id, chapter, numbers),
+    savedPassageKeysIn(book.id, chapter),
   ]);
 
   // Resource links address a single verse, so a selection uses its first.
@@ -183,21 +185,35 @@ export default async function VersePage({ params }: Props) {
 
       <div className="mt-4 flex flex-wrap items-start justify-between gap-4">
         <h1 className="font-serif text-2xl tracking-tight">{label}</h1>
-        <SavePassageButton
-          initiallySaved={savedPassage !== null}
-          passage={{
-            ref: label,
-            bookId: book.id,
-            chapter,
-            verses: numbers,
-            excerpt: found[0].verse.text,
-          }}
-        />
+        {!multiple && (
+          <SavePassageButton
+            initiallySaved={savedPassage !== null}
+            passage={{
+              ref: label,
+              bookId: book.id,
+              chapter,
+              verses: numbers,
+              excerpt: found[0].verse.text,
+            }}
+          />
+        )}
       </div>
       {multiple && (
         <p className="mt-1 text-sm text-ink-faint">
           {found.length} verses, side by side. A note written here belongs to all of them.
         </p>
+      )}
+      {multiple && (
+        <PassageSaver
+          bookId={book.id}
+          chapter={chapter}
+          savedKeys={savedKeys}
+          verses={found.map((entry) => ({
+            number: entry.number,
+            ref: `${book.name} ${chapter}:${entry.number}`,
+            text: entry.verse.text,
+          }))}
+        />
       )}
       {missing.length > 0 && (
         <p className="mt-2 text-sm text-ink-faint">

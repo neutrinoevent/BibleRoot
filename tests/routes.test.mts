@@ -205,13 +205,33 @@ describe("narrowing to several books at once", () => {
 });
 
 describe("keeping a verse", () => {
-  test("every verse page offers to save, and says which it means", async (t) => {
+  test("every verse page offers to save what is on it", async (t) => {
     if (!serving) return t.skip("nothing serving");
     const single = await textOf("/verse/proverbs/20/22");
     assert.match(single, /Save this verse/, "a verse cannot be kept");
 
+    // A selection is offered through the picker instead, since which of the
+    // verses to keep, and whether to keep them as one, are the reader's to say.
     const selection = await textOf("/verse/john/1/1,7,10");
-    assert.match(selection, /Save these verses/, "a selection cannot be kept");
+    assert.match(selection, /Keep these for later/, "a selection cannot be kept");
+  });
+
+  test("a selection offers to keep some of it, as a group or one by one", async (t) => {
+    if (!serving) return t.skip("nothing serving");
+    const text = await textOf("/verse/john/1/1,7,10");
+    assert.match(text, /Keep these for later/, "no way to choose what to keep");
+    assert.match(text, /together as one passage/, "cannot keep a selection as one entry");
+    assert.match(text, /on its own/, "cannot keep the verses separately");
+    assert.match(text, /3 of 3 chosen/, "does not start with everything chosen");
+  });
+
+  test("a single verse is offered plainly, with no group to choose", async (t) => {
+    if (!serving) return t.skip("nothing serving");
+    // One verse as a group and one verse on its own are the same entry, so two
+    // buttons there would be two ways to do one thing.
+    const text = await textOf("/verse/proverbs/20/22");
+    assert.match(text, /Save this verse/);
+    assert.doesNotMatch(text, /Keep these for later/);
   });
 
   test("the library explains itself before anything is in it", async (t) => {
