@@ -234,6 +234,26 @@ describe("keeping a verse", () => {
     assert.doesNotMatch(text, /Keep these for later/);
   });
 
+  test("a verse can be found wherever it was kept", async (t) => {
+    if (!serving) return t.skip("nothing serving");
+    const text = await textOf("/library?verse=John+3:16");
+    assert.match(text, /Everywhere John 3:16 appears/, "no way to gather one verse");
+  });
+
+  test("a reference that cannot be read says so rather than showing nothing", async (t) => {
+    if (!serving) return t.skip("nothing serving");
+    const text = await textOf("/library?verse=not+a+reference");
+    assert.match(text, /did not read as a single verse/);
+    // The rest of the library is still there.
+    assert.match(text, /Saved words and forms/);
+  });
+
+  test("a verse nothing has been kept about says so plainly", async (t) => {
+    if (!serving) return t.skip("nothing serving");
+    const text = await textOf("/library?verse=Obadiah+1:3");
+    assert.match(text, /Nothing in your library takes in that verse yet/);
+  });
+
   test("the library explains itself before anything is in it", async (t) => {
     if (!serving) return t.skip("nothing serving");
     const text = await textOf("/library");

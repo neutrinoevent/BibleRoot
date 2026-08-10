@@ -41,6 +41,9 @@ On a verse page:
 - **The interlinear** — every word in the order of the original text, Hebrew and
   Aramaic running right to left. Select any word to open its root.
 - **Notes** — anchored to that verse.
+- **Everywhere else you kept it** — a verse can be saved on its own and inside
+  any number of gatherings, each with its own notes. A verse page lists the
+  others, and `Library → Find everything about one verse` gathers them all.
 - **Save** — keep the verse in your library for later. With several verses open
   together you choose which of them to keep, and whether to keep them **as one
   passage** or **each on its own**. A group holds scattered verses together as a
@@ -84,6 +87,10 @@ The root is one click away from there.
 On the root page: the concise entry, which books it clusters in, every inflected
 form, and every occurrence shown in its verse. Going deeper:
 
+- **The small words too.** Hebrew joins its article, its conjunction and its
+  short prepositions to the front of the next word, and Strong's never numbered
+  them. Each has a page of its own with Brown-Driver-Briggs in full, reached
+  from the breakdown of any word that carries one.
 - **Scholarly lexicons**, in full, offline. Brown-Driver-Briggs for Hebrew and
   Aramaic, Abbott-Smith for Greek, with their sense hierarchies intact. Every
   scripture citation inside an entry is a link that opens here, and BDB's
@@ -210,6 +217,8 @@ built-in `node:sqlite`, so there is no native module to compile.
 | `npm run build:data` | Download sources and build the corpus |
 | `npm run build` | Production build |
 | `npm run lint` | ESLint |
+| `npm test` | Corpus figures, pure functions, and the pages themselves. Route tests skip unless a dev server is answering; corpus tests skip when there is no database |
+| `npm run audit:leaks` | Checks that nothing private has been committed. `--history` reads every file in every commit |
 
 ## Licence
 

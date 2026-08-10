@@ -7,18 +7,22 @@ answered for each one.
 
 ## Where things stand
 
-Shipped through `v18`. The reader, hover lookup and interlinear; scholarly
-lexicons in full with their citations linked; external deep links; multi-verse
-selection with shared-root tracing; all 31,102 verses including the disputed
-sixteen; the Septuagint bridge between Greek and Hebrew; inflected forms as
-pages of their own, opening in place before you commit to one; roots and forms
-starred independently; and the library kept where each platform keeps an
-application's files.
+Shipped through `v24`. The reader, hover lookup and interlinear; scholarly
+lexicons in full with their citations linked, including the eight inseparable
+particles Strong's never numbered; external deep links; multi-verse selection
+with shared-root tracing; all 31,102 verses including the disputed sixteen; the
+Septuagint bridge between Greek and Hebrew; inflected forms as pages of their
+own, opening in place before you commit to one; roots and forms starred
+independently; every occurrence of a word reachable, narrowed by book or by the
+wording the translators chose; verses and selections kept in the library, each
+with its own notes and each findable from any verse it contains; and the library
+kept where each platform keeps an application's files.
 
-Recent work has been as much about arrangement as about data: the verses now sit
-where a reader will meet them rather than below the outbound links, the
-interface speaks to the reader instead of to whoever wrote it, and the headword
-an outbound link will open at is named rather than assumed.
+Recent work has been as much about arrangement and about not losing things as
+about new data: the verses sit where a reader will meet them, outbound links sit
+above a list that can run to twenty thousand entries rather than below it, a
+filter always says what it has set aside and offers the whole back, and `npm
+test` now holds the figures that should not move.
 
 ---
 
@@ -40,12 +44,14 @@ across them, and ideally search both corpus and notes from the one box, so a
 query returns "3 verses, 2 of your notes". The corpus already has FTS5; notes
 are small enough to filter in memory.
 
-### Backlinks
+### Backlinks for words
 
-Which of your notes touch this term or verse. `notesForRef` and
-`notesForStrongs` exist and the verse and term pages already call them. What is
-missing is the reverse view in the library, and picking up notes that mention a
-reference in their body rather than their frontmatter.
+The verse half of this is done: a verse page lists every other place in the
+library that takes the verse in, and the library gathers them under one
+reference. A word has no equivalent. `notesForStrongs` exists and the term page
+calls it, but there is no view of which of your notes touch a given root, and
+nothing picks up a reference written in the body of a note rather than in its
+frontmatter.
 
 ### Chapter-level interlinear
 
@@ -96,7 +102,7 @@ preparation, and everything it needs is already files.
 
 ### Collocations
 
-Which words habitually keep company with a root, computed across all 443,626
+Which words habitually keep company with a root, computed across all 443,832
 aligned words. Cheap to compute and revealing for words like *ḥesed* or *ṣedeq*.
 Presentation needs care so the counts are not read as more than they are.
 
@@ -236,6 +242,14 @@ alignment, BibleRoot should not invent one. Fuzzy alignment would put the wrong
 Hebrew word under an English one and give no sign it had done so.
 
 ---
+
+### Passages that cross a chapter
+
+A saved passage holds one book and one chapter, so John 3:16 and Romans 8:28
+cannot be kept as one thing. The selection UI is per-chapter too. Both would have
+to change together: a passage would hold a list of references rather than a
+chapter and some numbers, and the reading view would need a way to gather verses
+from more than one place. Worth doing for anyone preparing a study on a theme.
 
 ## If picking one thing
 

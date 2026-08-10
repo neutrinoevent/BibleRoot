@@ -7,6 +7,11 @@ import path from "node:path";
 
 import { displayPath, resolveLibraryRoot } from "./library-location";
 import { orderedVerses, savedPassageKey } from "./passage-key";
+import {
+  anchorIncludes,
+  parseVerseAnchor,
+  type VerseAnchor,
+} from "./verse-anchor";
 import type { CustomResource, CustomResourceFile } from "./resources";
 
 /**
@@ -665,6 +670,93 @@ export async function saveNote(input: SaveNoteInput): Promise<Note> {
 
 export async function deleteNote(id: string): Promise<void> {
   await fsp.rm(noteFile(id), { force: true });
+}
+
+/* ------------------------------------------- everything about one verse */
+
+export interface VersePlace {
+  kind: "passage" | "note";
+  /** What it is about, as numbers. */
+  anchor: VerseAnchor;
+  /** How it reads on screen. */
+  ref: string;
+  /** A note's title, or a passage's opening words. */
+  summary: string | null;
+  /** What the reader called the notes kept against this exact set. */
+  noteTitles: string[];
+  /** True when this is about that one verse and nothing else. */
+  alone: boolean;
+
+  id: string;
+}
+
+/**
+ * Everywhere in the reader's own library that a particular verse turns up.
+ *
+ * A verse can be kept more than once and mean something different each time:
+ * John 3:16 on its own with a week of thinking beside it, and John 3:16 again
+ * inside a set gathered for a sermon, with quite different notes. Both are
+ * real, neither replaces the other, and until now standing on the verse showed
+ * no sign that the others existed.
+ */
+export async function versePlaces(
+  bookId: number,
+  chapter: number,
+  verse: number,
+): Promise<VersePlace[]> {
+  const [passages, notes] = await Promise.all([listPassages(), listNotes()]);
+
+  const noteAnchors = notes.map((note) => ({ note, anchor: parseVerseAnchor(note.ref) }));
+  const notesFor = (anchor: VerseAnchor) =>
+    noteAnchors
+      .filter(
+        (entry) =>
+          entry.anchor !== null &&
+          entry.anchor.bookId === anchor.bookId &&
+          entry.anchor.chapter === anchor.chapter &&
+          entry.anchor.verses.join(",") === anchor.verses.join(","),
+      )
+      .map((entry) => entry.note.title);
+
+  const places: VersePlace[] = [];
+
+  for (const passage of passages) {
+    const anchor = { bookId: passage.bookId, chapter: passage.chapter, verses: passage.verses };
+    if (!anchorIncludes(anchor, bookId, chapter, verse)) continue;
+    places.push({
+      kind: "passage",
+      anchor,
+      ref: passage.ref,
+      summary: passage.body || passage.excerpt,
+      alone: passage.verses.length === 1,
+      noteTitles: notesFor(anchor),
+      id: savedPassageKey(anchor),
+    });
+  }
+
+  // A note written on a set that was never saved as a passage still belongs
+  // here; the reader's thinking is what they are looking for, not the bookmark.
+  const already = new Set(places.map((place) => place.id));
+  for (const { note, anchor } of noteAnchors) {
+    if (!anchorIncludes(anchor, bookId, chapter, verse)) continue;
+    const key = savedPassageKey(anchor!);
+    if (already.has(key)) continue;
+    places.push({
+      kind: "note",
+      anchor: anchor!,
+      ref: note.ref ?? "",
+      summary: note.title,
+      alone: anchor!.verses.length === 1,
+      noteTitles: notesFor(anchor!),
+      id: key,
+    });
+    already.add(key);
+  }
+
+  // The verse on its own first, then the smallest gatherings.
+  return places.sort(
+    (a, b) => Number(b.alone) - Number(a.alone) || a.anchor.verses.length - b.anchor.verses.length,
+  );
 }
 
 /* ------------------------------------------------------ custom resources */

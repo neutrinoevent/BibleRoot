@@ -80,6 +80,12 @@ export default function AboutPage() {
       </p>
 
               <p className="mt-4">
+          Hebrew writes its article, its conjunction and its short prepositions joined to the
+          front of the next word, and Strong&apos;s numbering passed them over. Each has a page
+          of its own here, with Brown-Driver-Briggs in full, reached from the breakdown of any
+          word that carries one.
+        </p>
+        <p className="mt-4">
           Any verse can be kept for later, and so can a set of verses you are reading side by
           side. Saving asks nothing of you beyond a click — a passage often matters before you
           know what you want to say about it. When several verses are open together you can choose which of them to
@@ -87,7 +93,9 @@ export default function AboutPage() {
           three verses that belong together is one thing, four verses noticed while reading is
           another. Both can be true of the same verse, and removing one never removes the
           other. Saved passages gather in your library, and notes you write on that verse sit
-          with them.
+          with them. The same verse can be kept several times over and mean something
+          different each time — on its own, and inside a set gathered for a sermon — so each
+          keeps its own notes, and a verse page lists the other places you have kept it.
         </p>
         <p className="mt-4">
           A word&apos;s page lists every place it is used, and a form&apos;s page lists every

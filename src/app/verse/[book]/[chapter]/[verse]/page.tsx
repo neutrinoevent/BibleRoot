@@ -6,6 +6,7 @@ import { InterlinearGrid } from "@/components/InterlinearGrid";
 import { NotesPanel } from "@/components/NotesPanel";
 import { PassageSaver } from "@/components/PassageSaver";
 import { SavePassageButton } from "@/components/SavePassageButton";
+import { VersePlaces } from "@/components/VersePlaces";
 import { ReadingLine } from "@/components/ReadingLine";
 import { ResourceLinks } from "@/components/ResourceLinks";
 import { SharedRoots } from "@/components/SharedRoots";
@@ -19,7 +20,13 @@ import {
   type AnnotatedWord,
   type Verse,
 } from "@/lib/corpus";
-import { getPassage, notesForRef, readCustomResources, savedPassageKeysIn } from "@/lib/library";
+import {
+  getPassage,
+  notesForRef,
+  readCustomResources,
+  savedPassageKeysIn,
+  versePlaces,
+} from "@/lib/library";
 import {
   bookFromSlug,
   chapterHref,
@@ -147,11 +154,14 @@ export default async function VersePage({ params }: Props) {
   const noteRef = label;
   const missing = requested.filter((number) => !numbers.includes(number));
 
-  const [notes, custom, savedPassage, savedKeys] = await Promise.all([
+  const [notes, custom, savedPassage, savedKeys, places] = await Promise.all([
     notesForRef(noteRef),
     readCustomResources(),
     getPassage(book.id, chapter, numbers),
     savedPassageKeysIn(book.id, chapter),
+    // Only asked for a single verse: on a selection, "elsewhere" would mean a
+    // different thing for each verse on the page and say nothing clearly.
+    multiple ? Promise.resolve([]) : versePlaces(book.id, chapter, numbers[0]),
   ]);
 
   // Resource links address a single verse, so a selection uses its first.
@@ -262,6 +272,14 @@ export default async function VersePage({ params }: Props) {
         heading={multiple ? `Study ${found[0].verse.ref} elsewhere` : "Study this verse elsewhere"}
         blurb="Commentaries, translators' notes and other versions of this verse."
       />
+
+      {!multiple && (
+        <VersePlaces
+          places={places}
+          current={`${book.id}:${chapter}:${numbers[0]}`}
+          verseLabel={label}
+        />
+      )}
 
       <section className="mt-10">
         <NotesPanel verseRef={noteRef} notes={notes} />

@@ -12,6 +12,11 @@ import assert from "node:assert/strict";
 import { computeLibraryRoot, APP_DIR_NAME } from "../src/lib/library-location.ts";
 import { decomposeParsing, PARTICLE_NOTES } from "../src/lib/morphology.ts";
 import { savedPassageKey } from "../src/lib/passage-key.ts";
+import {
+  anchorIncludes,
+  anchorLabel,
+  parseVerseAnchor,
+} from "../src/lib/verse-anchor.ts";
 
 /**
  * The home directories below are invented, and joined together at runtime so
@@ -151,5 +156,55 @@ describe("telling one saved passage from another", () => {
 
   test("nonsense verse numbers are dropped rather than kept", () => {
     assert.equal(key(43, 1, [1, 0, -3, 7]), key(43, 1, [1, 7]));
+  });
+});
+
+describe("reading a saved thing's reference back into verses", () => {
+  test("a single verse", () => {
+    assert.deepEqual(parseVerseAnchor("John 3:16"), { bookId: 43, chapter: 3, verses: [16] });
+  });
+
+  test("several verses read together", () => {
+    assert.deepEqual(parseVerseAnchor("John 3:16, 17, 18"), {
+      bookId: 43,
+      chapter: 3,
+      verses: [16, 17, 18],
+    });
+  });
+
+  test("a book whose name begins with a number", () => {
+    const anchor = parseVerseAnchor("1 Samuel 3:4, 8");
+    assert.equal(anchor?.bookId, 9);
+    assert.deepEqual(anchor?.verses, [4, 8]);
+  });
+
+  test("odd spacing and ordering are forgiven", () => {
+    assert.deepEqual(parseVerseAnchor("  John 3 : 18,16 , 17  "), {
+      bookId: 43,
+      chapter: 3,
+      verses: [16, 17, 18],
+    });
+  });
+
+  test("anything it cannot read with certainty is refused", () => {
+    // A reader can write their own ref into a note by hand. Guessing at what
+    // they meant would put their notes under the wrong verse.
+    for (const bad of ["", "John", "John 3", "Nowhere 3:16", "3:16", "John three:16", null]) {
+      assert.equal(parseVerseAnchor(bad as string), null, `read "${bad}" as a reference`);
+    }
+  });
+
+  test("a reference reads back the same way it was written", () => {
+    const anchor = parseVerseAnchor("John 3:16, 17");
+    assert.equal(anchorLabel(anchor!), "John 3:16, 17");
+  });
+
+  test("a verse is found inside the sets that contain it", () => {
+    const group = parseVerseAnchor("John 3:16, 17, 18");
+    assert.equal(anchorIncludes(group, 43, 3, 17), true);
+    assert.equal(anchorIncludes(group, 43, 3, 19), false, "a verse not in the set");
+    assert.equal(anchorIncludes(group, 43, 4, 17), false, "the same number, another chapter");
+    assert.equal(anchorIncludes(group, 42, 3, 17), false, "the same number, another book");
+    assert.equal(anchorIncludes(null, 43, 3, 17), false, "an unreadable reference");
   });
 });
