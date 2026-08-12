@@ -122,6 +122,15 @@ Values are URL-encoded on substitution, only `http(s)` URLs are accepted, and a
 malformed file is ignored rather than breaking the page. Your links show up
 marked *yours*.
 
+## A note on the network
+
+The app listens on `127.0.0.1` and nothing else. That is deliberate: the pages
+show your own notes and saved passages, and the actions that write and delete
+them ask for no password, because on your own machine there is nobody else to
+ask. Offering that port to a network — a café, a church hall, a hotel — would
+hand those pages to anyone on it. `npm run dev:lan` exists when you genuinely
+want that, and says so in its name.
+
 ## Your files
 
 Saved terms and notes are markdown with a small frontmatter header, one file
@@ -213,7 +222,8 @@ built-in `node:sqlite`, so there is no native module to compile.
 
 | Command | What it does |
 | --- | --- |
-| `npm run dev` | Dev server |
+| `npm run dev` | Dev server, on `127.0.0.1` only |
+| `npm run dev:lan` | Dev server offered to your network, for testing on a phone. Everything below is then reachable by anyone on it |
 | `npm run build:data` | Download sources and build the corpus |
 | `npm run build` | Production build |
 | `npm run lint` | ESLint |

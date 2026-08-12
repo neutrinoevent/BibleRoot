@@ -3,13 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev -H 127.0.0.1",
     "build": "next build",
-    "start": "next start",
+    "start": "next start -H 127.0.0.1",
     "lint": "eslint",
     "build:data": "node scripts/build-data.ts",
     "audit:leaks": "node scripts/audit-leaks.ts",
-    "test": "node --test \"tests/*.test.mts\""
+    "test": "node --test \"tests/*.test.mts\"",
+    "dev:lan": "next dev -H 0.0.0.0"
   },
   "dependencies": {
     "next": "16.2.12",

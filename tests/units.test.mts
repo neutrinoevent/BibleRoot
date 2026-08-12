@@ -8,6 +8,7 @@
 
 import { test, describe } from "node:test";
 import assert from "node:assert/strict";
+import fs from "node:fs";
 
 import { computeLibraryRoot, APP_DIR_NAME } from "../src/lib/library-location.ts";
 import { decomposeParsing, PARTICLE_NOTES } from "../src/lib/morphology.ts";
@@ -206,5 +207,31 @@ describe("reading a saved thing's reference back into verses", () => {
     assert.equal(anchorIncludes(group, 43, 4, 17), false, "the same number, another chapter");
     assert.equal(anchorIncludes(group, 42, 3, 17), false, "the same number, another book");
     assert.equal(anchorIncludes(null, 43, 3, 17), false, "an unreadable reference");
+  });
+});
+
+describe("the app is not offered to the network", () => {
+  const scripts = JSON.parse(fs.readFileSync("package.json", "utf8")).scripts as Record<
+    string,
+    string
+  >;
+
+  test("dev and start bind to loopback", () => {
+    // A security audit found this listening on every interface. The pages serve
+    // the reader's own notes and saved passages, and the actions that write and
+    // delete them ask for no credential, because on one machine there is nobody
+    // else to be. On a shared network that assumption stops holding.
+    for (const name of ["dev", "start"]) {
+      assert.match(
+        scripts[name],
+        /-H\s+127\.0\.0\.1/,
+        `npm run ${name} would listen on every interface`,
+      );
+    }
+  });
+
+  test("reaching it from another device stays a deliberate, separate choice", () => {
+    assert.match(scripts["dev:lan"] ?? "", /0\.0\.0\.0/);
+    assert.doesNotMatch(scripts.dev, /0\.0\.0\.0/);
   });
 });
