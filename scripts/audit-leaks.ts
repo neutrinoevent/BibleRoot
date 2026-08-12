@@ -87,7 +87,13 @@ const RULES: Rule[] = [
 ];
 
 /** Files that exist locally and must never be committed. */
-const KEEP_LOCAL = ["CLAUDE.md", "docs/HANDOFF.md", "docs/WORKLOG.md", "data/library/"];
+const KEEP_LOCAL = [
+  "CLAUDE.md",
+  "HANDOFF.md",
+  "docs/HANDOFF.md",
+  "docs/WORKLOG.md",
+  "data/library/",
+];
 
 const SKIP = /\.(png|jpe?g|gif|ico|webp|woff2?|ttf|otf|svg|pdf|zip|db)$/i;
 

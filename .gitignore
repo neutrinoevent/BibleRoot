@@ -58,5 +58,6 @@ next-env.d.ts
 
 # Working notes for whoever maintains this. Local only.
 /CLAUDE.md
+/HANDOFF.md
 /docs/HANDOFF.md
 /docs/WORKLOG.md
